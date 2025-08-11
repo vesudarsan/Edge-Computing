@@ -8,13 +8,25 @@ services:
 
     volumes:
      - D:/edgeConfig/config.json:/app/config/config.json:ro
-     #- D:/edgeConfig/buffer.db:/app/buffer.db  # Persist SQLite
      - D:/edgeConfig:/app/data
     
     environment:
       - PYTHONUNBUFFERED=1
     
     restart: unless-stopped
+
+
+  mavlink-publisher:
+    build: ./mavlink
+    container_name: mavlink-service
+    ports:
+      - "5002:5002"
+      - "14550:14550/udp"
+
+    environment:
+      - PYTHONUNBUFFERED=1      
+
+    restart: unless-stopped    
 
   # portainer:
   #   image: portainer/portainer-ce:latest
