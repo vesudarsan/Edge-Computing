@@ -1,0 +1,188 @@
+| ---------- | -------------------- |
+| Services   | Port                 |
+| ---------- | -------------------- |
+| Edge Agent | 5000                 |
+| Mav Link   | 5001                 |
+| Map APP    | 5002                 |
+| ---------- | -------------------- |
+
+https://testclient-cloud.mqtt.cool/
+test.mosquitto.org
+
+| Topic                     | Action            | Payload Format                  | Calls Function     |
+| ------------------------- | ----------------- | ------------------------------- |
+| `drones/DRONE_ID/deploy`  | Deploy container  | `{ "image": ..., "name": ... }` |`handle_deploy()`  |
+| `drones/DRONE_ID/start`   | Start container   | `{ "name": ... }`               |`handle_start()`   |
+| `drones/DRONE_ID/stop`    | Stop container    | `{ "name": ... }`               |`handle_stop()`    |
+| `drones/DRONE_ID/restart` | Restart container | `{ "name": ... }`               |`handle_restart()` |
+| `/status`  | Check deployment state |
+| `/health`  | Agent liveness check   |
+| `/containers| Containers list       |
+
+Topic: drones/DRONE-001/deploy
+drones/DRONE-001/status
+
+mydrone/sensors
+
+payload: 
+{
+    "image": "nginx",
+    "name": "web",
+    "ports": {
+    "8081": 80
+  }
+}
+
+payload: 
+{
+    "image": "thomaspoignant/hello-world-rest-json",
+    "name": "hello-world-rest-json",
+    "ports": {
+    "8080": 8080
+  }
+}
+
+drones/DRONE-001/deploy
+spBv1.0/DroneFleet/DATA/DRONE-001/deploy
+spBv1.0/DroneFleet/+/DRONE-001
+
+spBv1.0/DroneFleet/DATA/+/deploy
+
+spBv1.0/DroneFleet/DATA/DRONE-001/deploy
+
+Birth message: spBv1.0/DroneFleet/NBIRTH/DRONE-001
+
+LWT (death) message: spBv1.0/DroneFleet/NDEATH/DRONE-001
+
+Container deployment status: spBv1.0/DroneFleet/DATA/DRONE-001
+
+Start command: spBv1.0/DroneFleet/NCMD/DRONE-001
+
+payload: 
+{
+    "image": "vesudarsan/my-mavlink-app",
+    "name": "sudarsan-my-mavlink-app",
+    "ports": {
+    "5001/tcp": 5001,
+    "14550/udp": 14550
+  }
+}
+
+{
+    "image": "vesudarsan/my-mavlink-app-arm-64",
+    "name": "sudarsan-my-mavlink-app",
+    "ports": {
+    "5001/tcp": 5001,
+    "14550/udp": 14550
+  }
+}
+
+drones/DRONE-001/start
+payload: 
+{    
+   "name": "sudarsan-my-mavlink-app"
+}
+
+
+
+{"name":"web"}
+{"name":"hello-world-rest-json"}
+{"name":"sudarsan-my-mavlink-app"}
+
+*****************************************************************************************************************************************************
+
+ 
+ Summary of All Control Endpoints(http://localhost:5000/health)
+| Endpoint   | Action                 |
+| ---------- | ---------------------- |
+| `/deploy`  | Deploy new image       | POST
+| `/stop`    | Stop a container       | POST
+| `/start`   | Start an existing one  | POST
+| `/restart` | Restart container      | POST
+| `/status`  | Check deployment state | GET
+| `/health`  | Agent liveness check   | GET
+| `/containers| Containers list       | GET
+
+POST /deploy JSON:
+{
+    "image": "nginx",
+    "name": "web",
+    
+    "ports": {
+    "8081": 80
+  }
+}
+
+
+
+POST /deploy JSON:
+
+{
+    "image": "thomaspoignant/hello-world-rest-json",
+    "name": "hello-world-rest-json",
+	"version" : 1.0,
+    "ports": {
+    "8080": 8080
+  }
+}
+
+*****************************************************************************************************************************************************
+| ---------- | -------------------- |
+| Services   | Port                 |
+| ---------- | -------------------- |
+| Edge Agent | 5000                 |
+| Mav Link   | 5001                 |
+| ---------- | -------------------- |
+
+docker compose up -d
+
+docker build -t mavlink-mqtt-api .
+
+docker run -p 5000:5000 -p 14550:14550/udp --name mavlink-api mavlink-mqtt-api
+
+docker run -it --rm   -p 5001:5001  -p 14550:14550/udp your-image-name
+
+--Docker Hub ----- 
+docker build -t mavlink-mqtt-api .
+
+docker tag mavlink-mqtt-api vesudarsan/my-mavlink-app:latest
+
+docker push vesudarsan/my-mavlink-app:latest
+
+******************** for Raspberry pi **************************************
+docker build -t mavlink-mqtt-api-arm-64 .
+
+docker tag mavlink-mqtt-api-arm-64 vesudarsan/my-mavlink-app-arm-64:latest
+
+docker push vesudarsan/my-mavlink-app-arm-64:latest
+
+
+docker buildx build --platform linux/arm64 -t vesudarsan/my-mavlink-app-arm-64 --push .
+
+localhost:5000/deploy
+{
+    "image": "vesudarsan/my-mavlink-app",
+    "name": "sudarsan-my-mavlink-app",
+	"version" : 1.0,
+    "ports": {
+    "5001": "5001",
+    "14550": "14550/udp"
+  }
+}
+
+{
+  "topic": "mydrone/commands",
+  "message": "{\"command\": \"ARM\"}"
+}
+
+
+{
+    "image": "grafana/grafana",
+    "name": "grafana",
+    "ports": {
+    "3000": "3000"
+  }
+}
+infinite api plugin
+
+host.docker.internal:5001

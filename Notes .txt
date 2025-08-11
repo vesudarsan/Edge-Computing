@@ -1,0 +1,89 @@
+from(bucket: "drone_telemetry")
+  |> range(start: -1h)
+  |> filter(fn: (r) => r._measurement == "GLOBAL_POSITION_INT")
+  |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+  
+  
+  
+ grafana dashboard
+ 	{
+  "id": 1,
+  "type": "stat",
+  "title": "System Health",
+  "gridPos": {
+    "x": 0,
+    "y": 0,
+    "h": 5,
+    "w": 6
+  },
+  "fieldConfig": {
+    "defaults": {
+      "mappings": [
+        {
+          "options": {
+            "fail": {
+              "text": "❌ Unhealthy"
+            },
+            "ok": {
+              "text": "✅ Healthy"
+            }
+          },
+          "type": "value"
+        }
+      ],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "red",
+            "value": null
+          },
+          {
+            "color": "green",
+            "value": 1
+          }
+        ]
+      },
+      "color": {
+        "mode": "thresholds"
+      }
+    },
+    "overrides": []
+  },
+  "pluginVersion": "12.0.2",
+  "targets": [
+    {
+      "cacheDurationSeconds": 300,
+      "fields": [
+        {
+          "jsonPath": ""
+        }
+      ],
+      "method": "GET",
+      "queryParams": "",
+      "refId": "A",
+      "urlPath": "/health"
+    }
+  ],
+  "datasource": {
+    "type": "marcusolsson-json-datasource",
+    "uid": "deqw52dcgjhmof"
+  },
+  "options": {
+    "reduceOptions": {
+      "values": false,
+      "calcs": [
+        "last"
+      ],
+      "fields": ""
+    },
+    "orientation": "horizontal",
+    "textMode": "auto",
+    "wideLayout": true,
+    "colorMode": "value",
+    "graphMode": "none",
+    "justifyMode": "center",
+    "showPercentChange": false,
+    "percentChangeColorMode": "standard"
+  }
+}

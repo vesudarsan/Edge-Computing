@@ -1,0 +1,28 @@
+
+services:
+  mqtt_eon-publisher:
+    build: ./mqtt_eon
+    container_name: mqtt-eon-service
+    ports:
+      - "5001:5001" 
+
+    volumes:
+     - D:/edgeConfig/config.json:/app/config/config.json:ro
+     #- D:/edgeConfig/buffer.db:/app/buffer.db  # Persist SQLite
+     - D:/edgeConfig:/app/data
+    
+    environment:
+      - PYTHONUNBUFFERED=1
+    
+    restart: unless-stopped
+
+  # portainer:
+  #   image: portainer/portainer-ce:latest
+  #   container_name: portainer
+  #   restart: always
+  #   ports:
+  #     - "9000:9000" # Portainer UI (HTTPS)
+  #     - "8000:8000" # Edge agent communications (optional)
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock # Access to Docker daemon
+  #     # - portainer_data:/data # Persistent data for Portainer    
