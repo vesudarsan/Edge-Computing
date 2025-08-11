@@ -110,7 +110,7 @@ class MQTTClient:
     def _on_message(self, client, userdata, msg):
         logging.info(f"📩 Received message on {msg.topic}: {msg.payload.decode()}")
 
-    def publish(self, topic=None, payload =None, qos=0,storeAndForward = False):   
+    def publish(self, topic=None, payload =None, qos=1,storeAndForward = False):   
         actual_topic = topic or self.topic
         if self.connected:
             result = self.client.publish(actual_topic, payload,qos=qos)

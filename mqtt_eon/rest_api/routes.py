@@ -58,6 +58,7 @@ def register_routes(app,publisher,buffer):
             result = publisher.client.publish(topic,message)
             if result.rc == 0:
                 logging.info(f"Payload: {message}, topic: {topic}")
+                
                 return jsonify({"status": "published", "topic": topic}), 200
             else:
                 # MQTT connected but publish failed — buffer it                
