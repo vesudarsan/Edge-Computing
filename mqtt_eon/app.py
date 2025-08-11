@@ -1,4 +1,3 @@
-# update to git hub for testing
 import signal
 import sys
 import os
