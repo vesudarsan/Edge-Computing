@@ -3,7 +3,9 @@ import json
 import time
 import psutil
 import socket
+import platform
 from utils.logger import setup_logger
+from utils.rest_client import RestClient
 logging = setup_logger(__name__)
 
 class MQTTClient:
@@ -20,9 +22,13 @@ class MQTTClient:
         self.sp_edge_id = sp_edge_id
         self.sp_device_id = sp_device_id
         self.TOPIC_PREFIX = f"{sparkplug_namespace}/{sp_group_id}/+/{sp_edge_id}"
+        self.rest_client = RestClient()
+
+ 
 
     def connect(self,topic,lwt_message,qos=1,retain=True):
         self.client.on_connect = self._on_connect
+        self.client.on_message = self._on_message
         self.client.will_set(topic,lwt_message,qos,retain)
         self.client.on_disconnect = self._on_disconnect
         self.client.connect(self.broker, self.port, 60)
@@ -80,25 +86,42 @@ class MQTTClient:
         logging.info("Published MQTT birth message")        
 
     def _on_connect(self, client, userdata, flags, rc):
+        if rc == 0:
+            self.connected = True
+            logging.info(f"✅ Connected to MQTT broker [{self.broker}:{self.port}] with code {rc}")
+        else:
+            self.connected = False
+            logging.error(f"❌ Failed to connect to MQTT broker [{self.broker}:{self.port}] with code {rc}")
+            return
 
-        logging.info(f"✅ Connected to MQTT broker.[{self.broker}] with code {rc}")  
-        self.connected = True  
-        # Publish NBIRTH message
-        self.publish_birth_message()
-        client.subscribe(f"{self.sparkplug_namespace}/{self.sp_group_id}/+/+/#")
+        # Publish NBIRTH (only if Sparkplug fields exist)
+        try:
+            self.publish_birth_message()
+        except Exception as e:
+            logging.error(f"⚠️ Failed to publish NBIRTH: {e}")
 
-        client.subscribe(f"{self.TOPIC_PREFIX}/deploy")
-        client.subscribe(f"{self.TOPIC_PREFIX}/start")
-        client.subscribe(f"{self.TOPIC_PREFIX}/stop")
-        client.subscribe(f"{self.TOPIC_PREFIX}/restart")
-        client.subscribe(f"{self.TOPIC_PREFIX}/health")
-        client.subscribe(f"{self.TOPIC_PREFIX}/status")
-        client.subscribe(f"{self.TOPIC_PREFIX}/containers")
+        # Define topics to subscribe
+        topics = [
+           # f"{self.sparkplug_namespace}/{self.sp_group_id}/+/+/#",  # wildcard for Sparkplug messages
+            f"{self.TOPIC_PREFIX}/deploy",
+            f"{self.TOPIC_PREFIX}/start",
+            f"{self.TOPIC_PREFIX}/stop",
+            f"{self.TOPIC_PREFIX}/restart",
+            f"{self.TOPIC_PREFIX}/health",
+            f"{self.TOPIC_PREFIX}/status",
+            f"{self.TOPIC_PREFIX}/containers",
+            f"{self.sparkplug_namespace}/{self.sp_group_id}/NCMD/{self.sp_edge_id}",
+            f"{self.sparkplug_namespace}/{self.sp_group_id}/DCMD/{self.sp_edge_id}/MAVLINK"
+        ]
 
-        # Subscribe to NCMD and DCMD topics
-        client.subscribe(f"{self.sparkplug_namespace}/{self.sp_group_id}/NCMD/{self.sp_edge_id}")
-        client.subscribe(f"{self.sparkplug_namespace}/{self.sp_group_id}/DCMD/{self.sp_edge_id}/{self.sp_device_id}")
-
+        # Subscribe and log each topic
+        for t in topics:
+            try:
+                client.subscribe(t)
+                logging.info(f"📡 Subscribed to topic: {t}")
+            except Exception as e:
+                logging.error(f"⚠️ Failed to subscribe to {t}: {e}")
+  
     def _on_disconnect(self, client, userdata, rc):
         self.connected = False
         logging.warning("❌ MQTT disconnected")
@@ -108,7 +131,38 @@ class MQTTClient:
         self.client.client.on_message = self._on_message
 
     def _on_message(self, client, userdata, msg):
-        logging.info(f"📩 Received message on {msg.topic}: {msg.payload.decode()}")
+        #logging.info(f"📩 Received message on {msg.topic}: {msg.payload.decode()}")
+
+        try:
+            payload_str = msg.payload.decode("utf-8")
+            logging.info(f"📩 Received message on {msg.topic}: {payload_str}")
+
+            # Only process messages for MAVLINK topics      
+            if "MAVLINK" not in msg.topic.upper():
+                logging.info("⏭ Skipping message (not a MAVLINK topic)")
+                return
+
+            data = json.loads(payload_str)
+
+            if data.get("CMD") == "BIN_FILE":
+                logging.info("📂 Command received to send BIN_FILE.")
+
+                # Call your BIN file upload logic here
+                # Call the MAVLink REST service
+                if platform.system() == "Windows": 
+                    url = "http://localhost:5002/drone/readSendBinFile"
+                else:
+                    url = "http://mavlink-service:5002/drone/readSendBinFile"
+
+                self.rest_client.post(url, data)
+
+        except json.JSONDecodeError as e:
+            logging.error(f"Invalid JSON in payload: {e}")
+        except Exception as e:
+            logging.error(f"Error processing message: {e}")
+
+
+
 
     def publish(self, topic=None, payload =None, qos=1,storeAndForward = False):   
         actual_topic = topic or self.topic

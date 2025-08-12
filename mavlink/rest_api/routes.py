@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from utils.logger import setup_logger
-
+import time
 logging = setup_logger(__name__)
 
 
@@ -35,9 +35,25 @@ def register_routes(app,service):
     def health():
         return jsonify({"status": "ok"})
 
+    @app.route('/heartbeat/status', methods=['GET'])
+    def heartbeat_status():
+        if service.last_heartbeat_time:
+            age = time.time() - service.last_heartbeat_time
+            return jsonify({
+                "status": "alive" if age < 10 else "stale",
+                "last_seen_sec_ago": round(age, 2)
+            })
+        else:
+            return jsonify({
+                "status": "never received",
+                "last_seen_sec_ago": None
+            })
 
-
-    
+    @app.route('/drone/readSendBinFile', methods=['POST'])
+    def read_send_bin_file():
+        print("@@@@@@@@@@@@@@@@@@2")#2dl
+        return service.readSendBinFile()
+        #return jsonify({"status": "ok"})# 2dl 
 
     # @app.route('/publish', methods=['POST'])
     # def publish_message():

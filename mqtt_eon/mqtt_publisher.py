@@ -121,9 +121,11 @@ class MQTTPublisher:
     def run_loop(self):
         logging.info("Started run_loop() thread for store and forward messages.")
         while self.running:
-            #logging.info(f"Checking for store and forward messages !!!!")           
+            #logging.info(f"Checking for store and forward messages !!!!")   
+            self.mqtt_connected = self.client.is_connected() 
+                
             try:
-                if self.is_mqtt_connected():
+                if self.mqtt_connected:
                     self.flush_buffer()
                     time.sleep(1.0)
             except Exception as e:

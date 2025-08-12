@@ -7,6 +7,7 @@ import time
 import threading
 import json
 import requests
+import base64
 from pymavlink import mavutil
 from rest_api.routes import register_routes
 
@@ -22,6 +23,13 @@ try:
         COM_TYPE = config["comm_type"]
         COM_NUMBER = config["com_number"]
         BAUD_RATE = config["baudrate"]
+        DRONE_UID = config["drone_UID"]
+
+        SPARKPLUG_NAMESPACE = config["sparkplug_namespace"]
+        SP_GROUP_ID = config["sparkplug_group_id"]
+        SP_EDGE_ID = config["drone_UID"]
+        SP_DEVICE_ID = config["sparkplug_device_id"]
+
         logging.info(f" [✅] Loaded  config values from file")
 
 except FileNotFoundError:    
@@ -30,6 +38,12 @@ except FileNotFoundError:
     COM_TYPE = "udp"
     COM_NUMBER = "COM12"
     BAUD_RATE = 115200
+    DRONE_UID = "123456789"
+
+    SPARKPLUG_NAMESPACE = "spBv1.0"
+    SP_GROUP_ID = "DroneFleet"
+    SP_EDGE_ID = "DHAKSHA-001"        # e.g., DRONE-001
+    SP_DEVICE_ID = ""            # Optional
 
 
 # ------------------------
@@ -53,8 +67,9 @@ class Mavlink:
         self.com_number = COM_NUMBER
         self.baud_rate = BAUD_RATE
         self.udp = MAVLINK_CONN_STR
-        self.topic = "spBv1.0/DumsDroneFleet"
-     
+        self.deviceId = "Mavlink"
+        self.topic = f"{SPARKPLUG_NAMESPACE}/{SP_GROUP_ID}/DDATA/{SP_EDGE_ID}/{self.deviceId}"
+ 
 
     def wait_for_heartbeat(self, retries=10, delay=3):
         for attempt in range(1, retries + 1):
@@ -141,7 +156,7 @@ class Mavlink:
         return True        
     
 
-    def run_loop(self): # 2dl need to update full function 
+    def run_loop(self):     
         logging.info("Started run_loop() thread for Mav Link services.") # 
         while self.running:
             logging.info(f"Polling MAVLink...... v1.0")
@@ -174,6 +189,83 @@ class Mavlink:
                 logging.error(f"Error in run_loop: {e}")
             time.sleep(0.1)    
 
+    def is_disarmed(self):
+        self.connection.mav.request_data_stream_send(self.connection.target_system, self.connection.target_component,
+                                            mavutil.mavlink.MAV_DATA_STREAM_ALL, 1, 1)
+        msg = self.connection.recv_match(type='HEARTBEAT', blocking=True, timeout=5)
+        if msg:
+            base_mode = msg.base_mode
+            # Check if disarmed (ARMED bit unset)
+            return (base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED) == 0
+        return False
+
+
+    def get_latest_log_filename(self):
+        self.connection.mav.command_long_send(self.connection.target_system, self.connection.target_component,
+                                  mavutil.mavlink.MAV_CMD_LOG_REQUEST_LIST, 0,
+                                  0, 0xFFFFFFFF, 0, 0, 0, 0, 0)
+        logs = []
+        while True:
+            msg = self.connection.recv_match(type='LOG_ENTRY', blocking=True, timeout=3)
+            if not msg:
+                break
+            logs.append((msg.num_logs, msg.last_log_num))
+
+        if logs:
+            return logs[-1][1]  # latest log num
+        return None
+
+    def download_log(master, log_id, file_path):
+        logging.info(f"Requesting log {log_id} download")
+      
+        master.mav.log_request_data_send(master.target_system, master.target_component,
+                                        log_id, 0, 90)
+        with open(file_path, 'wb') as f:
+            while True:
+                msg = master.recv_match(type='LOG_DATA', blocking=True, timeout=5)
+                if not msg:
+                    break
+                f.write(msg.data[:msg.count])
+                if msg.ofs + msg.count >= msg.size:
+                    break
+        logging.info(f"Log downloaded to {file_path}")
+       
+
+    def send_file_to_mqtt(self,file_path):
+
+        if not os.path.exists(file_path):
+            logging.info(f"[ERROR] File not found: {file_path}")        
+            return
+
+        with open(file_path, "rb") as f:
+            binary_data = f.read()
+            encoded_data = base64.b64encode(binary_data).decode('utf-8')  # Convert to string
+
+        payload = {
+            "flight_id": f"flight_{int(time.time())}",
+            "filename": os.path.basename(file_path),
+            "timestamp": time.time(),
+            "bin_file_base64": encoded_data
+        }
+
+        return json.dumps(payload)
+    
+ 
+
+    def readSendBinFile(self):
+        print("1111111")#2dl need to test with real cube and confirm
+        if self.is_disarmed(): 
+            logging.info(f"Disarm detected")
+            log_id = self.get_latest_log_filename(self.connection)
+            if log_id is not None:
+                file_path = f"log_{log_id}.bin"
+                self.download_log(self.connection, log_id, file_path)
+                return self.send_file_to_mqtt(file_path)
+            else:
+                logging.info(f"No logs found")
+        else:
+            logging.info(f"Still armed, waiting...")
+          
 
 # ------------------------
 # Graceful Shutdown on Ctrl+C
