@@ -9,34 +9,37 @@ logging = setup_logger(__name__)
 # Flask Routes
 # ------------------------
 def register_routes(app,publisher,buffer):
-    @app.route('/')
+    @app.get("/")
     def root():
-        return jsonify({
-            "status": "ok"})
+        return jsonify({"status": "ok"})
 
-    @app.route('/start', methods=['POST'])
+    @app.post("/start")
     def start():
         if publisher.running:
             return jsonify({"status": "already running"}), 400
         success = publisher.start()
         return jsonify({"status": "started" if success else "failed"}), 200 if success else 500
 
-    @app.route('/stop', methods=['POST'])
+   
+    @app.post("/stop")
     def stop():
         if publisher.stop():
             return jsonify({"status": "stopped"}), 200
         return jsonify({"status": "not running"}), 400
 
-    @app.route('/status', methods=['GET'])
+   
+    @app.get("/status")
     def status():
         return jsonify({"running": publisher.running, "mqtt_connected": publisher.mqtt_connected})
 
-    @app.route('/health', methods=['GET'])
+   
+    @app.get("/health")
     def health():
         return jsonify({"status": "ok"})
 
 
-    @app.route('/buffer/status', methods=['GET'])
+  
+    @app.get("/buffer/status")
     def buffer_status():
         result = buffer.getBufferCount()
         if "error" in result:
@@ -44,7 +47,8 @@ def register_routes(app,publisher,buffer):
         return jsonify(result)
     
 
-    @app.route('/publish', methods=['POST'])
+   
+    @app.post("/publish")
     def publish_message():
         data = request.get_json()
         
@@ -56,7 +60,8 @@ def register_routes(app,publisher,buffer):
 
         if publisher.is_mqtt_connected():
             result = publisher.client.publish(topic,message)
-            if result.rc == 0:
+         
+            if result and getattr(result, "rc", 1) == 0:   
                 logging.info(f"Payload: {message}, topic: {topic}")
                 
                 return jsonify({"status": "published", "topic": topic}), 200

@@ -10,12 +10,13 @@ logging = setup_logger(__name__)
 
 class MQTTClient:
     def __init__(self, broker, port, topic,drone_id,sparkplug_namespace,
-                            sp_group_id,sp_edge_id,sp_device_id):
-        self.client = mqtt.Client(drone_id)
+                            sp_group_id,sp_edge_id,sp_device_id):       
+        self.client = mqtt.Client(client_id=str(drone_id), clean_session=True)
         self.broker = broker
         self.port = port
         self.topic = topic
         self.connected = False
+
         self.drone_id = drone_id
         self.sparkplug_namespace = sparkplug_namespace
         self.sp_group_id = sp_group_id
@@ -28,9 +29,9 @@ class MQTTClient:
 
     def connect(self,topic,lwt_message,qos=1,retain=True):
         self.client.on_connect = self._on_connect
-        self.client.on_message = self._on_message
-        self.client.will_set(topic,lwt_message,qos,retain)
         self.client.on_disconnect = self._on_disconnect
+        self.client.on_message = self._on_message
+        self.client.will_set(topic,lwt_message,qos,retain)        
         self.client.connect(self.broker, self.port, 60)
         self.client.loop_start()
 
@@ -44,9 +45,12 @@ class MQTTClient:
         topic = f"{self.sparkplug_namespace}/{self.sp_group_id}/NDEATH/{self.sp_edge_id}"
         self.client.publish(topic, payload=disconnect_msg, qos=1, retain=True)
 
-        self.client.loop_stop()
-        self.client.disconnect()
-        logging.info("✅ MQTT disconnected")
+        try:
+            self.client.loop_stop()
+            self.client.disconnect()
+        finally:
+            self.connected = False
+            logging.info("✅ MQTT disconnected")
 
 
     def get_system_info(self):
@@ -86,11 +90,11 @@ class MQTTClient:
         logging.info("Published MQTT birth message")        
 
     def _on_connect(self, client, userdata, flags, rc):
-        if rc == 0:
-            self.connected = True
+        self.connected = (rc == 0)
+
+        if self.connected:            
             logging.info(f"✅ Connected to MQTT broker [{self.broker}:{self.port}] with code {rc}")
-        else:
-            self.connected = False
+        else:           
             logging.error(f"❌ Failed to connect to MQTT broker [{self.broker}:{self.port}] with code {rc}")
             return
 
@@ -110,7 +114,7 @@ class MQTTClient:
             f"{self.TOPIC_PREFIX}/health",
             f"{self.TOPIC_PREFIX}/status",
             f"{self.TOPIC_PREFIX}/containers",
-            f"{self.sparkplug_namespace}/{self.sp_group_id}/NCMD/{self.sp_edge_id}",
+            f"{self.sparkplug_namespace}/{self.sp_group_id}/NCMD/{self.sp_edge_id}/",
             f"{self.sparkplug_namespace}/{self.sp_group_id}/DCMD/{self.sp_edge_id}/MAVLINK"
         ]
 
@@ -131,8 +135,7 @@ class MQTTClient:
         self.client.client.on_message = self._on_message
 
     def _on_message(self, client, userdata, msg):
-        #logging.info(f"📩 Received message on {msg.topic}: {msg.payload.decode()}")
-
+               
         try:
             payload_str = msg.payload.decode("utf-8")
             logging.info(f"📩 Received message on {msg.topic}: {payload_str}")
@@ -150,9 +153,9 @@ class MQTTClient:
                 # Call your BIN file upload logic here
                 # Call the MAVLink REST service
                 if platform.system() == "Windows": 
-                    url = "http://localhost:5002/drone/readSendBinFile"
+                    url = "http://localhost:5002/drone/readSendBinFile" # 2dl read from config
                 else:
-                    url = "http://mavlink-service:5002/drone/readSendBinFile"
+                    url = "http://mavlink-service:5002/drone/readSendBinFile"  # 2dl read from config
 
                 self.rest_client.post(url, data)
 
@@ -166,13 +169,14 @@ class MQTTClient:
 
     def publish(self, topic=None, payload =None, qos=1,storeAndForward = False):   
         actual_topic = topic or self.topic
-        if self.connected:
-            result = self.client.publish(actual_topic, payload,qos=qos)
-            logging.info(f"✅ Published to {actual_topic} [qos={qos}]")
-            return result
-        else:
+        if not self.connected:
             logging.warning("❌ MQTT not connected")
             return None
+        
+        logging.info(f"✅ Published to {actual_topic} [qos={qos}]")
+        return self.client.publish(actual_topic, payload, qos=qos)
+
+
 
     def is_connected(self):
         return self.connected

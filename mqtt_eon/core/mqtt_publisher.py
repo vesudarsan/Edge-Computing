@@ -108,8 +108,10 @@ class MQTTPublisher:
         if not self.running:
             logging.info("Not running.")
             return False
-        self.running = False        
-        self.thread.join(timeout=3)
+        self.running = False   
+        if self.thread:
+            self.thread.join(timeout=3)     
+       
         self.client.disconnect()
         self.mqtt_connected = False
         logging.info("✅ Stopped cleanly.")

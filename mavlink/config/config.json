@@ -9,5 +9,6 @@
   "comm_type" : "udp",
   "com_number" :"COM12",
   "baudrate" : 115200,
-  "mavlink_connection_str": "udp:0.0.0.0:14550"
+  "mavlink_connection_str": "udp:0.0.0.0:14550",
+  "log_level": "INFO"
 }

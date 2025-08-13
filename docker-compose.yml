@@ -3,6 +3,7 @@ services:
   mqtt_eon-publisher:
     build: ./mqtt_eon
     container_name: mqtt-eon-service
+      
     ports:
       - "5001:5001" 
 
@@ -12,6 +13,7 @@ services:
     
     environment:
       - PYTHONUNBUFFERED=1
+      - CONTAINER_NAME=mqtt-eon-service
     
     restart: unless-stopped
 
@@ -22,9 +24,12 @@ services:
     ports:
       - "5002:5002"
       - "14550:14550/udp"
-
+    volumes:
+     - D:/edgeConfig/config.json:/app/config/config.json:ro
+     - D:/edgeConfig:/app/data
     environment:
-      - PYTHONUNBUFFERED=1      
+      - PYTHONUNBUFFERED=1    
+      - CONTAINER_NAME=mavlink-service  
 
     restart: unless-stopped    
 

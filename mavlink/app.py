@@ -8,13 +8,31 @@ import threading
 import json
 import requests
 import base64
+from datetime import datetime, timezone
 from pymavlink import mavutil
+from utils.rest_client import RestClient
 from rest_api.routes import register_routes
 
 from utils.logger import setup_logger
 logging = setup_logger(__name__)
 
-app = Flask(__name__)
+app = Flask(__name__)   
+
+
+ALLOWED_MAVLINK_MSGS = {
+    "ATTITUDE",
+    "GLOBAL_POSITION_INT",
+    "HEARTBEAT",
+    "SYS_STATUS",
+    "SERVO_OUTPUT_RAW",
+    "RC_CHANNELS",
+    "SYSTEM_TIME",
+    "BATTERY_STATUS",
+    "MCU_STATUS",
+    "MISSION_CURRENT",
+    "FENCE_STATUS",
+    "VIBRATION"
+}
 
 try:
     with open("config/config.json") as f:
@@ -52,10 +70,10 @@ except FileNotFoundError:
 class Mavlink:
     def __init__(self):
 
-        if platform.system() == "Windows": 
-            self.url = "http://localhost:5001/"
+        if platform.system() == "Windows":               
+            self.mqtt_eon_rest_call = RestClient("http://localhost:5001/")# 2dl read from config
         else:
-            self.url = "http://mqtt-eon-service:5001/"
+            self.mqtt_eon_rest_call = RestClient("http://mqtt-eon-service:5001/")# 2dl read from config
       
         self.mavlink_connection_str = MAVLINK_CONN_STR
        
@@ -69,6 +87,8 @@ class Mavlink:
         self.udp = MAVLINK_CONN_STR
         self.deviceId = "Mavlink"
         self.topic = f"{SPARKPLUG_NAMESPACE}/{SP_GROUP_ID}/DDATA/{SP_EDGE_ID}/{self.deviceId}"
+
+        
  
 
     def wait_for_heartbeat(self, retries=10, delay=3):
@@ -113,10 +133,9 @@ class Mavlink:
         try:
             data = {}
             msg_type = msg.get_type()
-            if msg_type not in ["ATTITUDE", "GLOBAL_POSITION_INT", "HEARTBEAT","SYS_STATUS"
-                                ,"SERVO_OUTPUT_RAW","RC_CHANNELS","SYSTEM_TIME","BATTERY_STATUS",
-                                "MCU_STATUS","MISSION_CURRENT","FENCE_STATUS","VIBRATION"]:
-                return None
+            if msg_type not in ALLOWED_MAVLINK_MSGS:
+                logging.debug(f"❌ Ignored MAVLink message: {msg_type}")
+                return None # Ignore unlisted messages
             
             if msg.get_type() == "HEARTBEAT":
                 self.last_heartbeat_time = time.time()
@@ -124,7 +143,14 @@ class Mavlink:
             data["messageType"] = msg_type
             for field in msg.get_fieldnames():
                 data[field] = getattr(msg, field)
+
+            # Add timestamp in RFC3339 UTC format
+            data["timestamp"] = datetime.now(timezone.utc).isoformat()
+            # Or, if you prefer epoch nanoseconds for InfluxDB         
+            # data["timestamp_ns"] = int(time.time() * 1_000_000_000)
+
             return data
+        
         except Exception as e:
             logging.error(f"Decode error: {e}")
             return None        
@@ -169,18 +195,25 @@ class Mavlink:
                     if data:
 
                         payload = {"topic": self.topic,"message": str(data)}
-     
-                        try:
-                            response = requests.post(self.url+"publish", json=payload, timeout=5)
-                            if response.status_code == 200:
-                                print("✅ Published successfully:", response.json())
-                            elif response.status_code == 202:
-                                print("⚠️ Buffered:", response.json())
-                            else:
-                                print(f"❌ Failed ({response.status_code}):", response.text)
 
-                        except requests.exceptions.RequestException as e:
-                            print("Error connecting to REST API:", e)
+                        self.mqtt_eon_rest_call.publish(payload)
+     
+                        # try:
+                        #     if requests.get 
+                        #     response = requests.post(self.url+"publish", json=payload, timeout=5)
+                        #     if response.status_code == 200:
+                        #         logging.info(f"✅ Published successfully:{response.json()}" )
+                        #         # print("✅ Published successfully:", response.json())
+                        #     elif response.status_code == 202:
+                        #         logging.info(f"⚠️ Buffered:{response.json()}" )
+                        #         # print("⚠️ Buffered:", response.json())
+                        #     else:
+                        #         logging.info(f"❌ Failed ({response.status_code},{response.text}):" )
+                        #         # print(f"❌ Failed ({response.status_code}):", response.text)
+
+                        # except requests.exceptions.RequestException as e:
+                        #     logging.error(f"Error connecting to REST API:", e)
+                        #     # print("Error connecting to REST API:", e)
                     else:
                         logging.debug("Filtered message.")
                 else:
@@ -252,8 +285,7 @@ class Mavlink:
     
  
 
-    def readSendBinFile(self):
-        print("1111111")#2dl need to test with real cube and confirm
+    def readSendBinFile(self):     
         if self.is_disarmed(): 
             logging.info(f"Disarm detected")
             log_id = self.get_latest_log_filename(self.connection)

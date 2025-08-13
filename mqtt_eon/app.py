@@ -1,14 +1,8 @@
-import signal
-import sys
-import os
-
+import signal, sys, json, os,time, threading
 from flask import Flask, request, jsonify
 from core.mqttClient import MQTTClient
 from utils.db_buffer import DBBuffer
-import json
-import time
-import threading
-from mqtt_publisher import MQTTPublisher
+from core.mqtt_publisher import MQTTPublisher
 from rest_api.routes import register_routes
 from utils.db_buffer import DBBuffer
 
@@ -17,10 +11,12 @@ logging = setup_logger(__name__)
 
 app = Flask(__name__)
 
-buffer = DBBuffer()
 
-try:
-    with open("config/config.json") as f:
+# Load config
+CFG_PATH = "config/config.json"
+
+try: 
+     with open(CFG_PATH, "r", encoding="utf-8") as f:
         config = json.load(f)    
         MQTT_BROKER = config["mqtt_broker"]
         MQTT_PORT = config["mqtt_port"]
@@ -47,6 +43,8 @@ except FileNotFoundError:
     SP_DEVICE_ID = ""            # Optional
 
 
+buffer = DBBuffer()
+
 # ------------------------
 # Instantiate Publisher
 # ------------------------
@@ -70,7 +68,7 @@ def handle_shutdown(sig, frame):
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, handle_shutdown)
     logging.info("🔌 Starting MQTT Publisher client services")
-    success = publisher.start()
+    publisher.start()
     logging.info("🚀 Starting Flask service on port 5001")
     app.run(host="0.0.0.0", port=5001)
 
