@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from utils.logger import setup_logger
 import time
 logging = setup_logger(__name__)
@@ -9,6 +10,7 @@ logging = setup_logger(__name__)
 # Flask Routes
 # ------------------------
 def register_routes(app,service):
+    CORS(app)   # 👈 enables CORS for all routes
     @app.route('/')
     def root():
         return jsonify({
@@ -30,6 +32,13 @@ def register_routes(app,service):
     @app.route('/status', methods=['GET'])
     def status():
         return jsonify({"running": service.running})
+    
+    @app.get("/uiStatus")
+    def newStatus():
+        if service.running:
+            return jsonify({"status": "running"})
+        else:
+            return jsonify({"status": "stopped"})    
 
     @app.route('/health', methods=['GET'])
     def health():

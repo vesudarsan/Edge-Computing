@@ -1,14 +1,17 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify,send_from_directory
 from utils.logger import setup_logger
+from flask_cors import CORS
+import os
 
 logging = setup_logger(__name__)
 
-
+#STATIC_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../static"))
 
 # ------------------------
 # Flask Routes
 # ------------------------
 def register_routes(app,publisher,buffer):
+    CORS(app)   # 👈 enables CORS for all routes
     @app.get("/")
     def root():
         return jsonify({"status": "ok"})
@@ -32,11 +35,20 @@ def register_routes(app,publisher,buffer):
     def status():
         return jsonify({"running": publisher.running, "mqtt_connected": publisher.mqtt_connected})
 
-   
+    @app.get("/uiStatus")
+    def newStatus():
+        if publisher.running:
+            return jsonify({"status": "running"})
+        else:
+            return jsonify({"status": "stopped"})
+
     @app.get("/health")
     def health():
         return jsonify({"status": "ok"})
 
+    @app.route("/control.html")
+    def serve_page():
+        return send_from_directory("static", "control.html")
 
   
     @app.get("/buffer/status")

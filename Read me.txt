@@ -2,14 +2,14 @@
 | Services   | Port                 |
 | ---------- | -------------------- |
 | Edge Agent | 5000                 |
-| Mav Link   | 5001                 |
-| Map APP    | 5002                 |
+| MQTT EON   | 5001                 |
+| MAV LINK   | 5002                 |
 | ---------- | -------------------- |
 
 https://testclient-cloud.mqtt.cool/
 test.mosquitto.org
 
-| Topic                     | Action            | Payload Format                  | Calls Function     |
+| Topic                     | Action            | Payload Format                  | Calls Function    |
 | ------------------------- | ----------------- | ------------------------------- |
 | `drones/DRONE_ID/deploy`  | Deploy container  | `{ "image": ..., "name": ... }` |`handle_deploy()`  |
 | `drones/DRONE_ID/start`   | Start container   | `{ "name": ... }`               |`handle_start()`   |
