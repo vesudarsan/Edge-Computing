@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edge Compute Containers</title>
+  <style>
+    :root {
+      --bg-color: #f0f2f5;
+      --card-bg: #fff;
+      --text-color: #333;
+      --title-color: #222;
+      --shadow: rgba(0,0,0,0.1);
+      --status-running: #28a745;
+      --status-exited: #dc3545;
+    }
+    body.dark {
+      --bg-color: #1e1e2f;
+      --card-bg: #2c2c3e;
+      --text-color: #e0e0e0;
+      --title-color: #f0f0f0;
+      --shadow: rgba(0,0,0,0.6);
+      --status-running: #4caf50;
+      --status-exited: #ff6b6b;
+    }
+    body {
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: var(--bg-color);
+      margin: 0;
+      padding: 20px;
+      color: var(--text-color);
+      transition: background 0.3s, color 0.3s;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 28px;
+      color: var(--title-color);
+    }
+    .theme-toggle {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      font-size: 13px;
+    }
+    .container-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      padding: 0 10px;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px var(--shadow);
+      transition: transform 0.2s, background 0.3s, color 0.3s;
+    }
+    .card:hover { transform: translateY(-5px); }
+    .card h2 { margin: 0 0 10px 0; font-size: 18px; color: #007bff; }
+    .info { font-size: 14px; margin: 4px 0; }
+    .status { font-weight: bold; margin-top: 6px; }
+    .status.running { color: var(--status-running); }
+    .status.exited { color: var(--status-exited); }
+    .btn-group { margin-top: 12px; }
+    button {
+      margin: 2px;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+    .start-btn { background: #28a745; color: white; }
+    .stop-btn { background: #dc3545; color: white; }
+    .restart-btn { background: #ffc107; color: black; }
+    .deploy-btn { background: #007bff; color: white; margin-bottom: 20px; }
+    .close-btn { background: #6c757d; color: white; }
+
+    /* Toast */
+    #toast {
+      visibility: hidden;
+      min-width: 250px;
+      margin-left: -125px;
+      background: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 12px;
+      position: fixed;
+      z-index: 1000;
+      left: 50%;
+      bottom: 30px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.5s, bottom 0.5s;
+    }
+    #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 10px;
+      width: 400px;
+      max-width: 90%;
+      color: var(--text-color);
+      transition: background 0.3s, color 0.3s;
+    }
+    .modal-content h2 { margin-top: 0; font-size: 20px; }
+    .modal-content input, .modal-content textarea {
+      width: 100%;
+      margin: 8px 0;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    .modal-actions { text-align: right; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
+  <h1>🚀 Edge Compute Containers</h1>
+  <div style="text-align:center;">
+    <button class="deploy-btn" onclick="openDeployModal()">➕ Deploy New Container</button>
+  </div>
+  <div id="containerGrid" class="container-grid"></div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <!-- Deploy Modal -->
+  <div id="deployModal" class="modal">
+    <div class="modal-content">
+      <h2>Deploy Container</h2>
+      <input type="text" id="deployName" placeholder="Container Name">
+      <input type="text" id="deployImage" placeholder="Image (e.g. nginx:latest)">
+      <input type="text" id="deployVersion" placeholder="Version (default: latest)">
+      <textarea id="deployPorts" placeholder='Ports JSON, e.g. {"80":8080}'></textarea>
+      <div class="modal-actions">
+        <button class="close-btn" onclick="closeDeployModal()">Cancel</button>
+        <button class="deploy-btn" onclick="deployContainer()">Deploy</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:5000";
+
+    function toggleTheme() {
+      const body = document.body;
+      const btn = document.querySelector(".theme-toggle");
+      body.classList.toggle("dark");
+      const isDark = body.classList.contains("dark");
+      btn.textContent = isDark ? "☀️ Light" : "🌙 Dark";
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+    }
+
+    function applySavedTheme() {
+      const savedTheme = localStorage.getItem("theme");
+      const btn = document.querySelector(".theme-toggle");
+      if (savedTheme === "dark") {
+        document.body.classList.add("dark");
+        btn.textContent = "☀️ Light";
+      } else {
+        document.body.classList.remove("dark");
+        btn.textContent = "🌙 Dark";
+      }
+    }
+
+    function showToast(msg, success=true) {
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.style.background = success ? "#28a745" : "#dc3545";
+      toast.className = "show";
+      setTimeout(() => toast.className = toast.className.replace("show", ""), 3000);
+    }
+
+    async function fetchContainers() {
+      try {
+        const res = await fetch(API_BASE + "/containers");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        const grid = document.getElementById("containerGrid");
+        grid.innerHTML = "";
+
+        data.forEach(c => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <h2>${c.name || "Unnamed"}</h2>
+            <div class="info"><b>ID:</b> ${c.id ? c.id.substring(0,12) : "-"}</div>
+            <div class="info"><b>Image:</b> ${c.image || "-"}</div>
+            <div class="info"><b>Uptime:</b> ${c.uptime_hours ? c.uptime_hours.toFixed(2) : "0.0"} hrs</div>
+            <div class="status ${c.status}">${c.status.toUpperCase()}</div>
+            <div class="btn-group">
+              <button class="start-btn" onclick="controlContainer('start','${c.name}')">Start</button>
+              <button class="stop-btn" onclick="controlContainer('stop','${c.name}')">Stop</button>
+              <button class="restart-btn" onclick="controlContainer('restart','${c.name}')">Restart</button>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        console.error("❌ Failed to fetch container data:", err);
+        document.getElementById("containerGrid").innerHTML =
+          `<div style="color:red;text-align:center;">❌ Failed to fetch container data</div>`;
+      }
+    }
+
+    async function controlContainer(action, name) {
+      try {
+        const res = await fetch(API_BASE + "/" + action, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name })
+        });
+        const result = await res.json();
+        showToast(`${action.toUpperCase()} ${name}: ${result.status || "done"}`, true);
+        fetchContainers();
+      } catch (err) {
+        showToast(`❌ Failed to ${action} ${name}`, false);
+      }
+    }
+
+    function openDeployModal() {
+      document.getElementById("deployModal").style.display = "flex";
+    }
+    function closeDeployModal() {
+      document.getElementById("deployModal").style.display = "none";
+    }
+    async function deployContainer() {
+      const name = document.getElementById("deployName").value.trim();
+      const image = document.getElementById("deployImage").value.trim();
+      const version = document.getElementById("deployVersion").value.trim() || "latest";
+      let ports = {};
+      try {
+        ports = JSON.parse(document.getElementById("deployPorts").value || "{}");
+      } catch (e) {
+        showToast("❌ Invalid ports JSON", false);
+        return;
+      }
+      try {
+        const res = await fetch(API_BASE + "/deploy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, image, version, ports })
+        });
+        const result = await res.json();
+        showToast(`DEPLOY ${name}: ${result.status || "done"}`, true);
+        closeDeployModal();
+        fetchContainers();
+      } catch (err) {
+        showToast(`❌ Failed to deploy ${name}`, false);
+      }
+    }
+
+    // Apply theme on page load
+    applySavedTheme();
+    fetchContainers();
+    setInterval(fetchContainers, 5000);
+  </script>
+</body>
+</html>
