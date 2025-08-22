@@ -8,6 +8,19 @@ from utils.logger import setup_logger
 from utils.rest_client import RestClient
 logging = setup_logger(__name__)
 
+OTA_URL_LOCALHOST = "http://localhost:5000/"
+OTA_URL_ENDPOINT = "http://ota_update-service:5000/"
+
+MAVLINK_URL_LOCALHOST = "http://localhost:5002/drone/readSendBinFile"
+MAVLINK_URL_ENDPOINT = "http://mavlink-service:5002/drone/readSendBinFile/"
+
+if platform.system() == "Windows": # 2dl read from config
+    mavlink_url = MAVLINK_URL_LOCALHOST 
+    ota_url = OTA_URL_LOCALHOST
+else:
+    mavlink_url = MAVLINK_URL_ENDPOINT 
+    ota_url = OTA_URL_ENDPOINT
+
 class MQTTClient:
     def __init__(self, broker, port, topic,drone_id,sparkplug_namespace,
                             sp_group_id,sp_edge_id,sp_device_id):       
@@ -22,7 +35,8 @@ class MQTTClient:
         self.sp_group_id = sp_group_id
         self.sp_edge_id = sp_edge_id
         self.sp_device_id = sp_device_id
-        self.TOPIC_PREFIX = f"{sparkplug_namespace}/{sp_group_id}/+/{sp_edge_id}"
+        # self.TOPIC_PREFIX = f"{sparkplug_namespace}/{sp_group_id}/+/{sp_edge_id}"
+        self.TOPIC_PREFIX = f"{sparkplug_namespace}/{sp_group_id}/NCMD/{sp_edge_id}"
         self.rest_client = RestClient()
 
  
@@ -81,7 +95,7 @@ class MQTTClient:
             "status": "online",
             "start_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
              "system": self.get_system_info(),
-            # "deployments": get_deployments()
+            # "deployments": get_deployments() # 2dl get this from OTA serive
         })
 
         topic = f"{self.sparkplug_namespace}/{self.sp_group_id}/NBIRTH/{self.sp_edge_id}"
@@ -139,6 +153,54 @@ class MQTTClient:
         try:
             payload_str = msg.payload.decode("utf-8")
             logging.info(f"📩 Received message on {msg.topic}: {payload_str}")
+       
+            topic = msg.topic
+            payload = json.loads(msg.payload.decode())
+           
+           
+            if topic.endswith("/deploy"):
+                image = payload.get("image")
+                name = payload.get("name")
+                ports = payload.get("ports")
+                if image and name:
+                    self.rest_client.post(ota_url+"/deploy", payload)                   
+                else:
+                    logging.error(f"Missing 'image' or 'name' in deploy payload")
+                  
+
+            elif topic.endswith("/start"):
+                name = payload.get("name")
+                if name is not None:
+                    # Send as JSON payload                   
+                    resp = self.rest_client.post(f"{ota_url}start", payload)                    
+                    logging.info(f"Start response:{resp.status_code}")
+                   
+                else:
+                    logging.info(f"⚠️ Start command received but no 'name' in payload:{payload}")
+
+            elif topic.endswith("/stop"):              
+                name = payload.get("name")  # will be None if key not present              
+               
+                if name is not None:
+                    # Send as JSON payload                   
+                    resp = self.rest_client.post(f"{ota_url}stop", payload)                    
+                    logging.info(f"Stop response:{resp.status_code}")
+                   
+                else:
+                    logging.info(f"⚠️ Stop command received but no 'name' in payload:{payload}")
+                  
+
+            elif topic.endswith("/restart"):
+                name = payload.get("name")
+                if name is not None:
+                    # Send as JSON payload                   
+                    resp = self.rest_client.post(f"{ota_url}restart", payload)                    
+                    logging.info(f"restart response:{resp.status_code}")
+                   
+                else:
+                    logging.info(f"⚠️ restart command received but no 'name' in payload:{payload}")
+
+
 
             # Only process messages for MAVLINK topics      
             if "MAVLINK" not in msg.topic.upper():
@@ -152,12 +214,12 @@ class MQTTClient:
 
                 # Call your BIN file upload logic here
                 # Call the MAVLink REST service
-                if platform.system() == "Windows": 
-                    url = "http://localhost:5002/drone/readSendBinFile" # 2dl read from config
-                else:
-                    url = "http://mavlink-service:5002/drone/readSendBinFile"  # 2dl read from config
+                # if platform.system() == "Windows": #2dl delete later
+                #     url = MAVLINK_URL_LOCALHOST # 2dl read from config
+                # else:
+                #     url = MAVLINK_URL_ENDPOINT  # 2dl read from config
 
-                self.rest_client.post(url, data)
+                self.rest_client.post(mavlink_url, data)
 
         except json.JSONDecodeError as e:
             logging.error(f"Invalid JSON in payload: {e}")

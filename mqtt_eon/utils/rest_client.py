@@ -9,6 +9,8 @@ class RestClient:
         :param base_url: Base URL of the REST service (e.g., 'http://mavlink-service:5002')
         :param timeout: Request timeout in seconds
         """   
+
+        print(" I am gettnig created !!!!!!!!!!!!1")#2dl
         self.timeout = timeout
 
     def post(self, endpoint, json_data):
@@ -20,6 +22,7 @@ class RestClient:
         """
       
         url = endpoint
+
         try:
             logging.info(f"🔗 POST {url}")
 

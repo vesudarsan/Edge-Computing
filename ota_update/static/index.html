@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edge Compute Dashboard</title>
+  <style>
+    :root {
+      --bg-light: #f0f2f5;
+      --bg-dark: #0f172a;
+      --sidebar-light: #ffffff;
+      --sidebar-dark: #1e293b;
+      --text-light: #333;
+      --text-dark: #e0e0e0;
+      --primary: #38bdf8;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      height: 100vh;
+      display: flex;
+      background: var(--bg-light);
+      color: var(--text-light);
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark {
+      background: var(--bg-dark);
+      color: var(--text-dark);
+    }
+
+    .hidden { display: none !important; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      background: var(--sidebar-light);
+      padding-top: 60px;
+      flex-shrink: 0;
+      display: none;
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+    body.dark .sidebar { background: var(--sidebar-dark); }
+    .sidebar.collapsed { width: 60px; }
+    .sidebar h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: var(--primary);
+      white-space: nowrap;
+    }
+    .sidebar a, .sidebar button {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 20px;
+      text-decoration: none;
+      color: inherit;
+      background: none;
+      border: none;
+      width: 100%;
+      cursor: pointer;
+      font-size: 15px;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .sidebar a:hover, .sidebar button:hover { background: rgba(0,0,0,0.1); }
+    body.dark .sidebar a:hover, body.dark .sidebar button:hover { background: rgba(255,255,255,0.1); }
+    .sidebar a.active { background: var(--primary); color: black; }
+    .sidebar.collapsed a span, .sidebar.collapsed button span { display: none; }
+
+    /* Main */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Login page */
+    #loginPage {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      flex: 1;
+      width: 100%;
+    }
+    #loginBox {
+      background: rgba(30, 41, 59, 0.85);
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.6);
+      border: 1px solid rgba(56, 189, 248, 0.8);
+      text-align: center;
+    }
+    #loginBox h1 {
+      margin-bottom: 20px;
+      color: var(--primary);
+      text-shadow: 0 0 8px var(--primary);
+    }
+    #loginBox input {
+      margin: 10px 0;
+      padding: 12px;
+      width: 220px;
+      border-radius: 8px;
+      border: 1px solid #555;
+      background: #1e293b;
+      color: white;
+      outline: none;
+    }
+    #loginBox input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+    }
+    #loginBox button {
+      padding: 12px 25px;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 15px;
+      transition: 0.3s;
+    }
+    #loginBox button:hover {
+      background: #0ea5e9;
+      box-shadow: 0 0 15px var(--primary);
+    }
+
+    /* Iframe */
+    #contentFrame {
+      flex: 1;
+      border: none;
+      width: 100%;
+      display: none;
+    }
+
+    /* Theme toggle (fixed top-right) */
+    .theme-toggle {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: var(--primary);
+      color: white;
+      font-weight: bold;
+      z-index: 9999;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+    .theme-toggle:hover {
+      background: #0ea5e9;
+    }
+
+    /* Sidebar toggle button */
+    .sidebar-toggle {
+      position: fixed;
+      top: 15px;
+      left: 20px;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: var(--primary);
+      color: white;
+      font-weight: bold;
+      z-index: 9999;
+      display: none; /* hidden until login */
+    }
+    .sidebar-toggle:hover {
+      background: #0ea5e9;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <h2>🚀 Edge Compute</h2>
+    <a href="#" onclick="loadPage('http://localhost:5001/control.html', this)" class="active">📡 <span>Control</span></a>
+    <a href="#" onclick="loadPage('http://localhost:5000/containers.html', this)">📦 <span>Containers</span></a>
+    <button onclick="logout()">🚪 <span>Logout</span></button>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+    <!-- Login Page -->
+    <div id="loginPage">
+      <div id="loginBox">
+        <h1>Login</h1>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+      </div>
+    </div>
+
+    <!-- Iframe after login -->
+    <iframe id="contentFrame"></iframe>
+  </div>
+
+  <!-- Top buttons -->
+  <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+  <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+
+  <script>
+    // Login
+    function login() {
+      const user = document.getElementById("username").value;
+      const pass = document.getElementById("password").value;
+      if (user === "admin" && pass === "admin") {
+        document.getElementById("loginPage").remove();
+        document.getElementById("sidebar").style.display = "block";
+        document.getElementById("contentFrame").style.display = "block";
+        document.querySelector(".sidebar-toggle").style.display = "block";
+        loadPage("http://localhost:5001/control.html", document.querySelector(".sidebar a"));
+      } else {
+        alert("Invalid login (use admin/admin)");
+      }
+    }
+
+    // Logout
+    function logout() { location.reload(); }
+
+    // Load page into iframe
+    function loadPage(url, linkEl) {
+      document.getElementById("contentFrame").src = url;
+      document.querySelectorAll(".sidebar a").forEach(a => a.classList.remove("active"));
+      if (linkEl) linkEl.classList.add("active");
+    }
+
+    // Theme toggle
+    function toggleTheme() {
+      document.body.classList.toggle("dark");
+      const isDark = document.body.classList.contains("dark");
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+      document.querySelector(".theme-toggle").textContent = isDark ? "☀️" : "🌙";
+    }
+    function applySavedTheme() {
+      const saved = localStorage.getItem("theme");
+      if (saved === "dark") document.body.classList.add("dark");
+      document.querySelector(".theme-toggle").textContent =
+        document.body.classList.contains("dark") ? "☀️" : "🌙";
+    }
+    applySavedTheme();
+
+    // Sidebar toggle
+    function toggleSidebar() {
+      document.getElementById("sidebar").classList.toggle("collapsed");
+    }
+  </script>
+</body>
+</html>

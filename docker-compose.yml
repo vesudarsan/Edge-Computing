@@ -1,5 +1,24 @@
 
 services:
+
+  ota_update:
+    build: ./ota_update
+    container_name: ota_update-service
+      
+    ports:
+      - "5000:5000" 
+
+    volumes:
+     - D:/edgeConfig/config.json:/app/config/config.json:ro
+     - D:/edgeConfig:/app/data
+     - /var/run/docker.sock:/var/run/docker.sock       # Needed to manage containers from within container
+    
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CONTAINER_NAME=ota_update-service
+    
+    restart: unless-stopped
+    
   mqtt_eon-publisher:
     build: ./mqtt_eon
     container_name: mqtt-eon-service

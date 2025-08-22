@@ -12,7 +12,13 @@ log = setup_logger()
 # ------------------------
 # Docker Setup
 # ------------------------
-if platform.system() == "Windows":   
+# if platform.system() == "Windows":   
+#     docker_client = docker.DockerClient(base_url='npipe:////./pipe/docker_engine')
+# else:
+#     docker_client = docker.DockerClient(base_url='unix:///var/run/docker.sock')
+
+if platform.system() == "Windows":
+    #import docker
     docker_client = docker.DockerClient(base_url='npipe:////./pipe/docker_engine')
 else:
     docker_client = docker.from_env()
