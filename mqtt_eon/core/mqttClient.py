@@ -92,8 +92,7 @@ class MQTTClient:
 
         resp = self.rest_client.get(ota_url+"/containers")
 
-        print("response:=>", json.dumps(resp.json()))
-           
+             
         birth_msg = json.dumps({
             "drone_id": self.drone_id,
             "status": "online",
