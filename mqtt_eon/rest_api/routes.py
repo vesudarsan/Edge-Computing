@@ -88,6 +88,11 @@ def register_routes(app,publisher,buffer):
 
             return jsonify({"status": "mqtt disconnected, buffered", "topic": topic}), 202
         
+    @app.get("/publishNbirth")
+    def publish_nbirth():
+        
+        publisher.sendNbirthMsg()
+        return jsonify({"status": "Published MQTT birth message" }), 200
 
     # @app.route('/drone/servo', methods=['POST'])
     # def set_servo():

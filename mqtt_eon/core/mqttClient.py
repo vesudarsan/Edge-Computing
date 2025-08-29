@@ -131,6 +131,7 @@ class MQTTClient:
             f"{self.TOPIC_PREFIX}/health",
             f"{self.TOPIC_PREFIX}/status",
             f"{self.TOPIC_PREFIX}/containers",
+            f"{self.TOPIC_PREFIX}/nbirtMsg",
             f"{self.sparkplug_namespace}/{self.sp_group_id}/NCMD/{self.sp_edge_id}/",
             f"{self.sparkplug_namespace}/{self.sp_group_id}/DCMD/{self.sp_edge_id}/MAVLINK"
         ]
@@ -202,6 +203,10 @@ class MQTTClient:
                    
                 else:
                     logging.info(f"⚠️ restart command received but no 'name' in payload:{payload}")
+
+            elif topic.endswith("/nbirtMsg"):
+                self.publish_birth_message()
+                    
 
 
 

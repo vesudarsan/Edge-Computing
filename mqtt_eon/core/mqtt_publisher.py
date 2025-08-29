@@ -132,3 +132,6 @@ class MQTTPublisher:
                     time.sleep(1.0)
             except Exception as e:
                 logging.error(f"❌ Exception in run_loop: {e}", exc_info=True)
+
+    def sendNbirthMsg(self):
+        return self.client.publish_birth_message()
