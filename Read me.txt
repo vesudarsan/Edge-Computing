@@ -225,3 +225,5 @@ topic: spBv1.0/DumsDroneFleet/NCMD/123456789/deploy
     "14550": "14550/udp"
   }
 }
+
+CI/CD test trigger 
