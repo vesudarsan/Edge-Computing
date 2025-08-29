@@ -3,6 +3,7 @@ services:
 
   ota_update:
     build: ./ota_update
+    image: ota_update:1.0.0
     container_name: ota_update-service
       
     ports:
@@ -21,6 +22,7 @@ services:
     
   mqtt_eon-publisher:
     build: ./mqtt_eon
+    image: mqtt-eon-service:1.0.0
     container_name: mqtt-eon-service
       
     ports:
@@ -39,6 +41,7 @@ services:
 
   mavlink-publisher:
     build: ./mavlink
+    image: mavlink-service:1.0.0
     container_name: mavlink-service
     ports:
       - "5002:5002"

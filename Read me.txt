@@ -186,3 +186,42 @@ localhost:5000/deploy
 infinite api plugin
 
 host.docker.internal:5001
+
+--------------------------------------docker push commands ---------------------------------
+docker compose build
+
+docker tag imageId vesudarsan/edgecompute-mavlink-publisher:latest
+docker push vesudarsan/edgecompute-mavlink-publisher:latest
+
+docker tag edgecompute-mqtt_eon-publisher vesudarsan/edgecompute-mqtt_eon-publisher:latest
+docker push vesudarsan/edgecompute-mqtt_eon-publisher:latest
+
+
+docker tag edgecompute-ota_update vesudarsan/edgecompute-ota_update:latest
+docker push vesudarsan/edgecompute-ota_update:latest
+
+
+-------------------other machine ----------------------------------------------------------
+make sure docker compose has correct repositorys
+docker compose pull     # pulls images from Docker Hub
+docker compose up -d    # starts the whole stack
+
+Remote operations
+
+topic: spBv1.0/DumsDroneFleet/NCMD/123456789/start
+
+{
+    "name": "mavlink-service"
+}
+
+topic: spBv1.0/DumsDroneFleet/NCMD/123456789/deploy
+
+{
+    "image": "vesudarsan/edgecompute-mavlink-publisher",
+    "name": "mavlink-service",
+	"version" : 1.0,
+    "ports": {
+    "5002": "5002",
+    "14550": "14550/udp"
+  }
+}

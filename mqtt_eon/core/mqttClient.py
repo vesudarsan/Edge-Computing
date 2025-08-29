@@ -88,14 +88,18 @@ class MQTTClient:
             }
         }
 
-    def publish_birth_message(self):        
+    def publish_birth_message(self):    
 
+        resp = self.rest_client.get(ota_url+"/containers")
+
+        print("response:=>", json.dumps(resp.json()))
+           
         birth_msg = json.dumps({
             "drone_id": self.drone_id,
             "status": "online",
             "start_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
              "system": self.get_system_info(),
-            # "deployments": get_deployments() # 2dl get this from OTA serive
+             "deployments": (self.rest_client.get(ota_url+"/containers")).json() # get this from OTA serive           
         })
 
         topic = f"{self.sparkplug_namespace}/{self.sp_group_id}/NBIRTH/{self.sp_edge_id}"

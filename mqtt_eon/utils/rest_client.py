@@ -9,8 +9,6 @@ class RestClient:
         :param base_url: Base URL of the REST service (e.g., 'http://mavlink-service:5002')
         :param timeout: Request timeout in seconds
         """   
-
-        print(" I am gettnig created !!!!!!!!!!!!1")#2dl
         self.timeout = timeout
 
     def post(self, endpoint, json_data):
@@ -35,4 +33,30 @@ class RestClient:
             return response
         except requests.RequestException as e:
             logging.error(f"REST POST request failed: {e}")
+            return None
+
+
+    def get(self, endpoint, params=None):
+        """
+        Send GET request to REST service.
+        :param endpoint: Endpoint path (e.g., '/mavlink/status')
+        :param params: Dictionary of query params (optional)
+        :return: Response object or None on failure
+        """
+        url = endpoint
+
+        try:
+            logging.info(f"🔗 GET {url} params={params}")
+
+            response = requests.get(url, params=params, timeout=self.timeout)
+
+            if response.status_code == 200:
+                logging.info(f"✅ Response: {response.json()}")
+            else:
+                logging.error(f"❌ Error {response.status_code}: {response.text}")
+
+            return response
+
+        except requests.RequestException as e:
+            logging.error(f"REST GET request failed: {e}")
             return None

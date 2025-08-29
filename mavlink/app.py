@@ -133,9 +133,9 @@ class Mavlink:
         try:
             data = {}
             msg_type = msg.get_type()
-            if msg_type not in ALLOWED_MAVLINK_MSGS:
-                logging.debug(f"❌ Ignored MAVLink message: {msg_type}")
-                return None # Ignore unlisted messages
+            # if msg_type not in ALLOWED_MAVLINK_MSGS: # 2dl allowing all mavlink msgs for now, no filters applied 
+            #     logging.debug(f"❌ Ignored MAVLink message: {msg_type}")
+            #     return None # Ignore unlisted messages
             
             if msg.get_type() == "HEARTBEAT":
                 self.last_heartbeat_time = time.time()

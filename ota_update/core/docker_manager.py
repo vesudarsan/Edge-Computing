@@ -98,6 +98,23 @@ def get_deployments():
 
 #     save_deployment(name, image, version, json.dumps(ports), container.id)
 #     return container
+
+
+def free_port(port_number):
+    """Stop and remove any container using the given external port."""
+    for c in docker_client.containers.list(all=True):
+        ports = c.attrs["HostConfig"].get("PortBindings", {})
+        for internal, binding in ports.items():
+            for b in binding:
+                if b.get("HostPort") == str(port_number):
+                    log.warning(f"Port {port_number} is already used by container {c.name}. Removing it...")
+                    try:
+                        c.stop()
+                        c.remove(force=True)
+                        log.info(f"Released port {port_number} from container {c.name}")
+                    except Exception as e:
+                        log.error(f"Failed to remove container {c.name}: {e}")
+
 # ------------------------
 # Container Action Handlers
 # ------------------------
@@ -111,12 +128,19 @@ def deploy_container(image, container_name,port_mappings,version):
         docker_client.images.pull(image)
         try:
             container = docker_client.containers.get(container_name)
+            log.info(f"Stopping and removing existing container: {container_name}")
             container.stop()
-            container.remove()
+            #container.remove()
+            container.remove(force=True)
         except docker.errors.NotFound:
             log.info(f"No existing container named {container_name}")
-            formatted_ports = {f"{internal}/tcp": external for internal, external in port_mappings.items()}
-            print("formatted_ports", formatted_ports)  
+
+        # Free all external ports that we are about to bind
+        for _, external in port_mappings.items():
+            free_port(external)
+        
+        formatted_ports = {f"{internal}/tcp": external for internal, external in port_mappings.items()}
+        print("formatted_ports", formatted_ports)  
 
         # Start new container
         container = docker_client.containers.run(
@@ -129,6 +153,7 @@ def deploy_container(image, container_name,port_mappings,version):
        
         # Save to DB only after successful deployment
         save_deployment(container_name, image, version, json.dumps(port_mappings), container.id)
+        log.info(f"✅ Deployment successful: {container_name} running on {formatted_ports}")
 
 
         # deployment_state["status"] = "deployed"
@@ -216,7 +241,7 @@ def get_containers(all=True):
                     uptime_hours = 0
 
             result.append({
-                "id": c.id[:12],  # short ID
+                # "id": c.id[:12],  # short ID
                 "name": c.name,
                 "status": c.status,
                 "image": c.image.tags[0] if c.image.tags else "<none>",
