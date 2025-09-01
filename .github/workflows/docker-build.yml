@@ -19,10 +19,11 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME  }}
           password: ${{ secrets.DOCKER_PASSWORD  }}
 
-      - name: Parse docker-compose for services and versions
+      - name: Parse docker-compose for services
         id: parse
         run: |
-          echo "services=$(yq e '.services | keys | .[]' docker-compose.yml)" >> $GITHUB_OUTPUT
+                services=$(yq e '.services | keys | .[]' docker-compose.yml | xargs)
+                echo "services=$services" >> $GITHUB_OUTPUT
 
       - name: Build and Push Images
         run: |
@@ -37,4 +38,4 @@ jobs:
               --tag "$image" \
               --tag "${image%:*}:latest" \
               --push
-          done
+          done          
