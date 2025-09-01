@@ -4,7 +4,7 @@ services:
   ota_update:
     build: ./ota_update
     image: ota_update:1.0.0
-    container_name: ota_update_service
+    container_name: ota-update-service
       
     ports:
       - "5000:5000" 
@@ -16,14 +16,14 @@ services:
     
     environment:
       - PYTHONUNBUFFERED=1
-      - CONTAINER_NAME=ota_update_service
+      - CONTAINER_NAME=ota-update-service
     
     restart: unless-stopped
     
-  mqtt_eon-publisher:
+  mqtt_eon_service:
     build: ./mqtt_eon
     image: mqtt-eon-service:1.0.0
-    container_name: mqtt_eon_service
+    container_name: mqtt-eon-service
       
     ports:
       - "5001:5001" 
@@ -34,15 +34,15 @@ services:
     
     environment:
       - PYTHONUNBUFFERED=1
-      - CONTAINER_NAME=mqtt_eon_service
+      - CONTAINER_NAME=mqtt-eon-service
     
     restart: unless-stopped
 
 
-  mavlink-publisher:
+  mavlink_service:
     build: ./mavlink
     image: mavlink-service:1.0.0
-    container_name: mavlink_service
+    container_name: mavlink-service
     ports:
       - "5002:5002"
       - "14550:14550/udp"
@@ -51,7 +51,7 @@ services:
      - D:/edgeConfig:/app/data
     environment:
       - PYTHONUNBUFFERED=1    
-      - CONTAINER_NAME=mavlink_service  
+      - CONTAINER_NAME=mavlink-service  
 
     restart: unless-stopped    
 
