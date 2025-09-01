@@ -9,7 +9,7 @@ from utils.rest_client import RestClient
 logging = setup_logger(__name__)
 
 OTA_URL_LOCALHOST = "http://localhost:5000/"
-OTA_URL_ENDPOINT = "http://ota_update-service:5000/"
+OTA_URL_ENDPOINT = "http://ota-update-service:5000/"
 
 MAVLINK_URL_LOCALHOST = "http://localhost:5002/drone/readSendBinFile"
 MAVLINK_URL_ENDPOINT = "http://mavlink-service:5002/drone/readSendBinFile/"

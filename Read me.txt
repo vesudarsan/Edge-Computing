@@ -217,7 +217,7 @@ topic: spBv1.0/DumsDroneFleet/NCMD/123456789/start
 topic: spBv1.0/DumsDroneFleet/NCMD/123456789/deploy
 
 {
-    "image": "vesudarsan/edgecompute-mavlink-publisher",
+    "image": "vesudarsan/mavlink-service:1.0.0",
     "name": "mavlink-service",
 	"version" : 1.0,
     "ports": {
@@ -227,3 +227,10 @@ topic: spBv1.0/DumsDroneFleet/NCMD/123456789/deploy
 }
 
 CI/CD test trigger 
+
+// get nbirth message
+spBv1.0/DumsDroneFleet/NCMD/123456789/nbirtMsg
+{
+
+}
+spBv1.0/DumsDroneFleet/NBIRTH/123456789
