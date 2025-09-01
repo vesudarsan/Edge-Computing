@@ -22,15 +22,28 @@ jobs:
       - name: Parse docker-compose for services
         id: parse
         run: |
-                services=$(yq e '.services | keys | .[]' docker-compose.yml | xargs)
-                echo "services=$services" >> $GITHUB_OUTPUT
+          services=$(yq e '.services | keys | .[]' docker-compose.yml | xargs)
+          echo "services=$services" >> $GITHUB_OUTPUT
 
       - name: Build and Push Images
         run: |
-          VERSION=$(yq e '.version' docker-compose.yml || echo "latest")
-          for service in ${{ steps.services.outputs.services }}; do
-            echo "🔨 Building service: $service"
-            IMAGE="vesudarsan/${service}:${VERSION}"
-            docker build -t $IMAGE ./$service
-            docker push $IMAGE
-          done         
+          for service in ${{ steps.parse.outputs.services }}; do
+            image=$(yq e ".services.[\"$service\"].image" docker-compose.yml)
+            context=$(yq e ".services.[\"$service\"].build" docker-compose.yml)
+
+            # Extract version from image (part after the last colon)
+            version=$(echo "$image" | awk -F: '{print $2}')
+            repo=$(echo "$image" | awk -F: '{print $1}')
+
+            if [ -z "$version" ] || [ "$version" == "null" ]; then
+              version="latest"
+            fi
+
+            echo "🚀 Building $repo:$version from $context"
+
+            docker buildx build "$context" \
+              --file "$context/Dockerfile" \
+              --tag "${repo}:${version}" \
+              --tag "${repo}:latest" \
+              --push
+          done      
