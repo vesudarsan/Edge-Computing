@@ -31,19 +31,10 @@ jobs:
             image=$(yq e ".services.[\"$service\"].image" docker-compose.yml)
             context=$(yq e ".services.[\"$service\"].build" docker-compose.yml)
 
-            # Extract version from image (part after the last colon)
-            version=$(echo "$image" | awk -F: '{print $2}')
-            repo=$(echo "$image" | awk -F: '{print $1}')
-
-            if [ -z "$version" ] || [ "$version" == "null" ]; then
-              version="latest"
-            fi
-
-            echo "🚀 Building $repo:$version from $context"
+            echo "🚀 Building $image from $context"
 
             docker buildx build "$context" \
               --file "$context/Dockerfile" \
-              --tag "${repo}:${version}" \
-              --tag "${repo}:latest" \
+              --tag "$image" \
               --push
-          done      
+          done

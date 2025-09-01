@@ -67,19 +67,19 @@ services:
   #     # - portainer_data:/data # Persistent data for Portainer    
 
 
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana   
-    restart: always
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      #- GF_INSTALL_PLUGINS= yesoreyeram-infinity-datasource
+#   grafana:
+#     image: grafana/grafana:latest
+#     container_name: grafana   
+#     restart: always
+#     ports:
+#       - "3000:3000"
+#     volumes:
+#       - grafana-data:/var/lib/grafana
+#     environment:
+#       - GF_SECURITY_ADMIN_USER=admin
+#       - GF_SECURITY_ADMIN_PASSWORD=admin
+#       #- GF_INSTALL_PLUGINS= yesoreyeram-infinity-datasource
 
 
-volumes:
-  grafana-data:      
+# volumes:
+#   grafana-data:      
