@@ -83,3 +83,7 @@ services:
 
 # volumes:
 #   grafana-data:      
+
+networks:
+  edgecompute-net:
+    driver: bridge
