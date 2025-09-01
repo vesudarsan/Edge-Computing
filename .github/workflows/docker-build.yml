@@ -27,15 +27,10 @@ jobs:
 
       - name: Build and Push Images
         run: |
-          for service in ${{ steps.parse.outputs.services }}; do
-            image=$(yq e ".services.[\"$service\"].image" docker-compose.yml)
-            context=$(yq e ".services.[\"$service\"].build" docker-compose.yml)
-
-            echo "🚀 Building $image from $context"
-
-            docker buildx build "$context" \
-              --file "$context/Dockerfile" \
-              --tag "$image" \
-              --tag "${image%:*}:latest" \
-              --push
-          done          
+          VERSION=$(yq e '.version' docker-compose.yml || echo "latest")
+          for service in ${{ steps.services.outputs.services }}; do
+            echo "🔨 Building service: $service"
+            IMAGE="vesudarsan/${service}:${VERSION}"
+            docker build -t $IMAGE ./$service
+            docker push $IMAGE
+          done         
