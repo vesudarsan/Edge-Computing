@@ -185,7 +185,7 @@ class Mavlink:
     def run_loop(self):     
         logging.info("Started run_loop() thread for Mav Link services.") # 
         while self.running:
-            logging.info(f"Polling MAVLink...... v1.0")
+            logging.info(f"Polling MAVLink...... v1.0.58")
            
             try:
                 msg = self.connection.recv_match(blocking=True, timeout=5)
