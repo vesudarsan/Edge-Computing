@@ -19,6 +19,8 @@ services:
       - CONTAINER_NAME=ota-update-service
     
     restart: unless-stopped
+    networks:
+      - edgecompute-net
     
   mqtt_eon_service:
     build: ./mqtt_eon
@@ -37,6 +39,8 @@ services:
       - CONTAINER_NAME=mqtt-eon-service
     
     restart: unless-stopped
+    networks:
+      - edgecompute-net
 
 
   mavlink_service:
@@ -54,6 +58,8 @@ services:
       - CONTAINER_NAME=mavlink-service  
 
     restart: unless-stopped    
+    networks:
+      - edgecompute-net
 
   # portainer:
   #   image: portainer/portainer-ce:latest
