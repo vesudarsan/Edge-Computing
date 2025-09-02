@@ -163,13 +163,14 @@ def deploy_container(image, container_name,port_mappings,version):
             name=container_name,
             detach=True,
             restart_policy={"Name": "always"},
-            ports=formatted_ports
+            ports=formatted_ports,
+            network="edgecompute-net"   # 👈 force into shared network
         )
        
        # 6. Attach it explicitly to shared network
         network.connect(container)
         log.info(f"🔗 Connected {container_name} to {network_name}")
-        
+
         # Save to DB only after successful deployment
         save_deployment(container_name, image, version, json.dumps(port_mappings), container.id)
         log.info(f"✅ Deployment successful: {container_name} running on {formatted_ports}")
