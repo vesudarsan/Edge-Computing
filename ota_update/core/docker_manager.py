@@ -125,6 +125,18 @@ def deploy_container(image, container_name,port_mappings,version):
     # deployment_state["last_error"] = None
 
     try:
+
+        # Ensure network exists
+        network_name = "edgecompute-net"
+        try:
+            docker_client.networks.get(network_name)
+            log.info(f"✅ Network '{network_name}' already exists")
+        except docker.errors.NotFound:
+            docker_client.networks.create(network_name, driver="bridge")
+            log.info(f"🌐 Created network '{network_name}'")
+
+
+
         docker_client.images.pull(image)
         try:
             container = docker_client.containers.get(container_name)
