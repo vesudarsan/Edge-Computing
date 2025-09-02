@@ -226,6 +226,13 @@ topic: spBv1.0/DumsDroneFleet/NCMD/123456789/deploy
   }
 }
 
+
+{
+    "image": "vesudarsan/mqtt-eon-service:1.0.0",
+    "name": "mqtt-eon-service",
+
+}
+
 CI/CD test trigger 
 
 // get nbirth message

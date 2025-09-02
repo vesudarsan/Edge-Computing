@@ -115,6 +115,13 @@ def free_port(port_number):
                     except Exception as e:
                         log.error(f"Failed to remove container {c.name}: {e}")
 
+def ensure_network(network_name="edgecompute-net"):
+    try:
+        return docker_client.networks.get(network_name)
+    except docker.errors.NotFound:
+        return docker_client.networks.create(network_name, driver="bridge")
+
+
 # ------------------------
 # Container Action Handlers
 # ------------------------
@@ -126,14 +133,10 @@ def deploy_container(image, container_name,port_mappings,version):
 
     try:
 
-        # Ensure network exists
+        # 1. Ensure shared network exists
         network_name = "edgecompute-net"
-        try:
-            docker_client.networks.get(network_name)
-            log.info(f"✅ Network '{network_name}' already exists")
-        except docker.errors.NotFound:
-            docker_client.networks.create(network_name, driver="bridge")
-            log.info(f"🌐 Created network '{network_name}'")
+        network = ensure_network(network_name)
+
 
 
 
@@ -163,6 +166,10 @@ def deploy_container(image, container_name,port_mappings,version):
             ports=formatted_ports
         )
        
+       # 6. Attach it explicitly to shared network
+        network.connect(container)
+        log.info(f"🔗 Connected {container_name} to {network_name}")
+        
         # Save to DB only after successful deployment
         save_deployment(container_name, image, version, json.dumps(port_mappings), container.id)
         log.info(f"✅ Deployment successful: {container_name} running on {formatted_ports}")
