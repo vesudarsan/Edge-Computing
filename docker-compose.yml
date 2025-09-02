@@ -93,3 +93,4 @@ services:
 networks:
   edgecompute-net:
     driver: bridge
+    # name: edgecompute-net
