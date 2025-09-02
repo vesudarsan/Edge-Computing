@@ -3,7 +3,7 @@ services:
 
   ota_update:
     build: ./ota_update
-    image: vesudarsan/ota_update:1.0.0
+    image: 11vesudarsan/ota_update:1.0.0
     container_name: ota-update-service
       
     ports:
@@ -22,7 +22,7 @@ services:
     
   mqtt_eon_service:
     build: ./mqtt_eon
-    image: vesudarsan/mqtt-eon-service:1.0.0
+    image: 11vesudarsan/mqtt-eon-service:1.0.0
     container_name: mqtt-eon-service
       
     ports:
@@ -41,7 +41,7 @@ services:
 
   mavlink_service:
     build: ./mavlink
-    image: vesudarsan/mavlink-service:1.0.0
+    image: 11vesudarsan/mavlink-service:1.0.0
     container_name: mavlink-service
     ports:
       - "5002:5002"

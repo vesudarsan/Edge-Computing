@@ -127,9 +127,7 @@ def ensure_network(network_name="edgecompute-net"):
 # ------------------------
 def deploy_container(image, container_name,port_mappings,version):
     log.info(f"Starting deployment: {image} -> {container_name}")
-    # deployment_state["status"] = "deploying"
-    # deployment_state["last_update"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    # deployment_state["last_error"] = None
+
 
     try:
 
@@ -142,20 +140,28 @@ def deploy_container(image, container_name,port_mappings,version):
 
         docker_client.images.pull(image)
         try:
-            container = docker_client.containers.get(container_name)
+            old = docker_client.containers.get(container_name)
             log.info(f"Stopping and removing existing container: {container_name}")
-            container.stop()
+            old.stop()
             #container.remove()
-            container.remove(force=True)
+            old.remove(force=True)
         except docker.errors.NotFound:
             log.info(f"No existing container named {container_name}")
 
         # Free all external ports that we are about to bind
-        for _, external in port_mappings.items():
-            free_port(external)
+        # for _, external in port_mappings.items():
+        #     free_port(external)
         
-        formatted_ports = {f"{internal}/tcp": external for internal, external in port_mappings.items()}
-        print("formatted_ports", formatted_ports)  
+        # formatted_ports = {f"{internal}/tcp": external for internal, external in port_mappings.items()}
+        # print("formatted_ports", formatted_ports)  
+        formatted_ports = {}
+        for internal, external in port_mappings.items():
+            if "/" in str(external):   # e.g. "14550/udp"
+                external_port, proto = str(external).split("/")
+                formatted_ports[f"{internal}/{proto}"] = int(external_port)
+            else:
+                formatted_ports[f"{internal}/tcp"] = int(external)
+        log.info(f"Formatted ports: {formatted_ports}")
 
         # Start new container
         container = docker_client.containers.run(
@@ -164,12 +170,18 @@ def deploy_container(image, container_name,port_mappings,version):
             detach=True,
             restart_policy={"Name": "always"},
             ports=formatted_ports,
-            network="edgecompute-net"   # 👈 force into shared network
+            network=network_name   # 👈 force into shared network
         )
        
        # 6. Attach it explicitly to shared network
-        network.connect(container)
-        log.info(f"🔗 Connected {container_name} to {network_name}")
+
+       # Double-check network attachment (avoid duplicate connect)
+        # net = docker_client.networks.get("edgecompute-net")
+        # if container.name not in [c.name for c in net.containers]:
+        #     net.connect(container)
+        #     log.info(f"🔗 Connected {container_name} to {network_name}")
+
+             
 
         # Save to DB only after successful deployment
         save_deployment(container_name, image, version, json.dumps(port_mappings), container.id)
