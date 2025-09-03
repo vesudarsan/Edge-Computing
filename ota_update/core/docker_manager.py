@@ -122,8 +122,8 @@ def ensure_network(network_name="edgecompute-net"):
         #     return net.name # 2dl only for testing
         #     #return net
         if net.name.endswith(network_name):
-           log.info(f"net.name", net.name)
-        
+           log.info(f"net.name {net.name}")
+               
            return net.name # 2dl only for testing
                     #return net        
     return docker_client.networks.create(network_name, driver="bridge")
@@ -142,7 +142,6 @@ def deploy_container(image, container_name,port_mappings,version):
 
     try:
 
-        
         network = ensure_network("edgecompute-net")
 
         docker_client.images.pull(image)
