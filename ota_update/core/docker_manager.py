@@ -116,10 +116,21 @@ def free_port(port_number):
                         log.error(f"Failed to remove container {c.name}: {e}")
 
 def ensure_network(network_name="edgecompute-net"):
-    try:
-        return docker_client.networks.get(network_name)
-    except docker.errors.NotFound:
-        return docker_client.networks.create(network_name, driver="bridge")
+    for net in docker_client.networks.list():
+        # if net.name == network_name or net.name.endswith(network_name):
+        #     print("net.name", net.name)#2dl 
+        #     return net.name # 2dl only for testing
+        #     #return net
+        if net.name.endswith(network_name):
+           log.info(f"net.name", net.name)
+        
+           return net.name # 2dl only for testing
+                    #return net        
+    return docker_client.networks.create(network_name, driver="bridge")
+    # try:
+    #     return docker_client.networks.get(network_name)
+    # except docker.errors.NotFound:
+    #     return docker_client.networks.create(network_name, driver="bridge")
 
 
 # ------------------------
@@ -131,12 +142,8 @@ def deploy_container(image, container_name,port_mappings,version):
 
     try:
 
-        # 1. Ensure shared network exists
-        network_name = "edgecompute-net"
-        network = ensure_network(network_name)
-
-
-
+        
+        network = ensure_network("edgecompute-net")
 
         docker_client.images.pull(image)
         try:
@@ -170,7 +177,7 @@ def deploy_container(image, container_name,port_mappings,version):
             detach=True,
             restart_policy={"Name": "always"},
             ports=formatted_ports,
-            network=network_name   # 👈 force into shared network
+            network=network   # 👈 force into shared network
         )
        
        # 6. Attach it explicitly to shared network
