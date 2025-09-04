@@ -229,10 +229,20 @@ topic: spBv1.0/DumsDroneFleet/NCMD/123456789/deploy
 
 {
     "image": "vesudarsan/mqtt-eon-service:1.0.0",
-    "name": "mqtt-eon-service"
-
+    "name": "mqtt-eon-service",
+     "ports": {
+    "5001": "5001"
+  }
 }
 
+
+{
+    "image": "vesudarsan/ota_update:1.0.0",
+    "name": "ota-update-service",
+     "ports": {
+    "5000": "5000"
+  }
+}
 CI/CD test trigger 
 
 // get nbirth message

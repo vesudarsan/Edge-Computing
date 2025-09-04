@@ -23,5 +23,5 @@ register_routes(app)
 
 if __name__ == "__main__":
     init_db()
-    log.info("🚀 Starting Edge Compute OTA Agent REST services...")
+    log.info("🚀 Starting Edge Compute OTA Agent REST services...v1.0")
     app.run(host="0.0.0.0", port=FLASK_PORT, threaded=True)
