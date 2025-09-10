@@ -4,7 +4,7 @@ from core.mqttClient import MQTTClient
 from utils.db_buffer import DBBuffer
 from core.mqtt_publisher import MQTTPublisher
 from rest_api.routes import register_routes
-from utils.db_buffer import DBBuffer
+
 
 from utils.logger import setup_logger
 logging = setup_logger(__name__)

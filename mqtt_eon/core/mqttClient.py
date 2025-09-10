@@ -1,5 +1,6 @@
 import paho.mqtt.client as mqtt
 import json
+import ast
 import time
 import psutil
 import socket
@@ -246,7 +247,11 @@ class MQTTClient:
             return None
         
         logging.info(f"✅ Published to {actual_topic} [qos={qos}]")
-        return self.client.publish(actual_topic, payload, qos=qos)
+
+        python_dict = ast.literal_eval(payload)
+        payload_json_string = json.dumps(python_dict)   
+
+        return self.client.publish(actual_topic, payload_json_string, qos=qos)
 
 
 
