@@ -216,8 +216,7 @@ topic: spBv1.0/DumsDroneFleet/NCMD/123456789/deploy
     "ports": {
     "5002": "5002",
     "14550": "14550/udp"
-  }
-}
+  }}
 
 
 {
@@ -225,8 +224,7 @@ topic: spBv1.0/DumsDroneFleet/NCMD/123456789/deploy
     "name": "mqtt-eon-service",
      "ports": {
     "5001": "5001"
-  }
-}
+  }}
 
 
 {
@@ -246,3 +244,20 @@ spBv1.0/DumsDroneFleet/NCMD/123456789/nbirtMsg
 spBv1.0/DumsDroneFleet/NBIRTH/123456789
 
 spBv1.0/DumsDroneFleet/DDATA/123456789/Mavlink
+
+*************************influx cli access -------------------
+docker ps
+docker exec -it de0c75d71ce2 /bin/bash
+influx v1 shell
+
+root@de0c75d71ce2:
+
+influx delete \
+  --bucket drone_telemetry \
+  --org drone-org \
+  --start "2025-09-10T00:00:00Z" \
+  --stop "2025-09-10T23:59:59Z" \
+  --predicate '_measurement="ATTITUDE" AND drone_id="123456789"'
+
+🧼 Delete One Day of Data from InfluxDB (v2.x CLI)
+✅ Basic command to delete all data from a measurement for one day:
