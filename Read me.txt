@@ -261,3 +261,7 @@ influx delete \
 
 🧼 Delete One Day of Data from InfluxDB (v2.x CLI)
 ✅ Basic command to delete all data from a measurement for one day:
+<<<<<<< HEAD
+
+
+>>>>>>> db1d09f (updated points)
