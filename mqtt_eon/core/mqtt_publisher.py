@@ -18,12 +18,12 @@ logging = setup_logger(__name__)
 # ------------------------
 class MQTTPublisher:
     def __init__(self, mqtt_broker, mqtt_port, topic, drone_uid,buffer,sparkplug_namespace,
-                            sp_group_id,sp_edge_id,sp_device_id):
+                            sp_group_id,sp_edge_id,sp_device_id,username,password):
         self.broker = mqtt_broker
         self.port = mqtt_port
         self.topic = topic
         self.client = MQTTClient(mqtt_broker, mqtt_port, topic, drone_uid,sparkplug_namespace,
-                            sp_group_id,sp_edge_id,sp_device_id)
+                            sp_group_id,sp_edge_id,sp_device_id,username,password)
         
         self.mqtt_connected = False
         self.thread = None

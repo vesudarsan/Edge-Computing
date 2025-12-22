@@ -56,6 +56,8 @@ services:
     environment:
       - PYTHONUNBUFFERED=1    
       - CONTAINER_NAME=mavlink-service  
+    # devices:
+    #   - /dev/ttyACM0:/dev/ttyACM0
 
     restart: unless-stopped    
     networks:

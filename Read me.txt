@@ -248,7 +248,7 @@ spBv1.0/DumsDroneFleet/DDATA/123456789/Mavlink
 *************************influx cli access -------------------
 docker ps
 docker exec -it de0c75d71ce2 /bin/bash
-influx v1 shell
+
 
 root@de0c75d71ce2:
 
@@ -258,6 +258,44 @@ influx delete \
   --start "2025-09-10T00:00:00Z" \
   --stop "2025-09-10T23:59:59Z" \
   --predicate '_measurement="ATTITUDE" AND drone_id="123456789"'
+  
+ influx delete --bucket drone_telemetry --org drone-org --start "2025-11-04T00:00:00Z" --stop "2025-11-06T23:59:59Z" --predicate '_measurement="flight_session" AND drone_id="123456789"'
 
 🧼 Delete One Day of Data from InfluxDB (v2.x CLI)
 ✅ Basic command to delete all data from a measurement for one day:
+influx v1 shell
+
+from(bucket: "drone_telemetry")
+  |> range(start: -365d)
+  |> filter(fn: (r) => r._measurement == "flight_hours")
+  |> filter(fn: (r) => r._field == "hours" and r.drone_id == "123456789")
+  |> drop(columns: ["window_start", "window_end"])   // optional, removes window tags
+  |> group(columns: [])                              // combine all rows into one
+  |> sum()
+  |> map(fn: (r) => ({
+        r with
+        _field: "total_hours",
+        _value: r._value
+  }))
+
+
+#in seconds (if needed):
+from(bucket: "drone_telemetry")
+  |> range(start: -365d)
+  |> filter(fn: (r) => r._measurement == "flight_hours")
+  |> filter(fn: (r) => r._field == "hours" and r.drone_id == "123456789")
+  |> drop(columns: ["window_start","window_end"])   // optional but helps
+  |> group(columns: [])                              // collapse to one group
+  |> sum()
+  |> map(fn: (r) => ({
+        r with
+        _field: "seconds",
+        _value: r._value * 3600.0
+  }))
+
+from(bucket: "drone_telemetry")
+  |> range(start: -365d)
+  |> filter(fn: (r) => r._measurement == "flight_events")
+  |> filter(fn: (r) => r._field == "landings" and r.drone_id == "123456789")
+  |> group(columns: [])
+  |> sum()

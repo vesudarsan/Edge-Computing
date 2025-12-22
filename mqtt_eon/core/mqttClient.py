@@ -1,4 +1,5 @@
 import paho.mqtt.client as mqtt
+import ssl
 import json
 import ast
 import time
@@ -26,8 +27,9 @@ else:
 
 class MQTTClient:
     def __init__(self, broker, port, topic,drone_id,sparkplug_namespace,
-                            sp_group_id,sp_edge_id,sp_device_id):       
-        self.client = mqtt.Client(client_id=str(drone_id), clean_session=True)
+                            sp_group_id,sp_edge_id,sp_device_id,
+                            username, password):       
+        self.client = mqtt.Client(client_id=str(drone_id), clean_session=True,protocol=mqtt.MQTTv311)
         self.broker = broker
         self.port = port
         self.topic = topic
@@ -42,6 +44,16 @@ class MQTTClient:
         self.TOPIC_PREFIX = f"{sparkplug_namespace}/{sp_group_id}/NCMD/{sp_edge_id}"
         self.rest_client = RestClient()
 
+        # 🔐 TLS CONFIG (NO cert files needed for HiveMQ Cloud)
+        self.client.tls_set(
+            tls_version=ssl.PROTOCOL_TLS_CLIENT
+        )
+        self.client.tls_insecure_set(False)
+
+        # 🔑 Authentication
+        self.client.username_pw_set(username, password)
+
+        
  
 
     def connect(self,topic,lwt_message,qos=1,retain=True):
