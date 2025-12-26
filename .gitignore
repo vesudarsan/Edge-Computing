@@ -11,6 +11,7 @@ deployments.db
 # Virtual environment
 venv/
 .env/
+.env
 
 # Logs
 *.log

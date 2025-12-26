@@ -4,7 +4,7 @@ from core.mqttClient import MQTTClient
 from utils.db_buffer import DBBuffer
 from core.mqtt_publisher import MQTTPublisher
 from rest_api.routes import register_routes
-
+import os
 
 from utils.logger import setup_logger
 logging = setup_logger(__name__)
@@ -27,8 +27,9 @@ try:
         SP_GROUP_ID = config["sparkplug_group_id"]
         SP_EDGE_ID = config["drone_UID"]
         SP_DEVICE_ID = config["sparkplug_device_id"]       
-        USERNAME = config["mqtt_username"]
-        PASSWORD = config["mqtt_password"]
+        USERNAME = os.getenv("HIVEMQ_USERNAME")
+        PASSWORD = os.getenv("HIVEMQ_PASSWORD")
+
 
         logging.info(f" [✅] Loaded  config values from file")
 

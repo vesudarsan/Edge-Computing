@@ -26,6 +26,8 @@ services:
     build: ./mqtt_eon
     image: vesudarsan/mqtt-eon-service:1.0.0
     container_name: mqtt-eon-service
+    env_file:
+      - .env
       
     ports:
       - "5001:5001" 
