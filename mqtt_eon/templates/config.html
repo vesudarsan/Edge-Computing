@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Drone Edge Configuration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --border: #e5e7eb;
+            --text: #0f172a;
+            --muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 22px 40px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        header p {
+            margin: 6px 0 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+            gap: 22px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+        }
+
+        .card h2 {
+            margin: 0 0 15px;
+            font-size: 18px;
+            color: #1e293b;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-top: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--muted);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 14px;
+            background: white;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+        }
+
+        .actions {
+            margin-top: 30px;
+            text-align: right;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 13px 34px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        footer {
+            text-align: center;
+            padding: 18px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Drone Edge Agent</h1>
+    <p>Local Configuration Dashboard</p>
+</header>
+
+<div class="container">
+    <form method="post">
+
+        <div class="grid">
+
+            <!-- MQTT SETTINGS -->
+            <div class="card">
+                <h2>MQTT Settings</h2>
+
+                <div class="form-group">
+                    <label>MQTT Broker</label>
+                    <input name="mqtt_broker" value="{{ config.mqtt_broker }}">
+                </div>
+
+                <div class="form-group">
+                    <label>MQTT Port</label>
+                    <input name="mqtt_port" value="{{ config.mqtt_port }}">
+                </div>
+
+                <div class="form-group">
+                    <label>Topic</label>
+                    <input name="topic" value="{{ config.topic }}">
+                </div>
+            </div>
+
+            <!-- SPARKPLUG SETTINGS -->
+            <div class="card">
+                <h2>Sparkplug B</h2>
+
+                <div class="form-group">
+                    <label>Namespace</label>
+                    <input name="sparkplug_namespace" value="{{ config.sparkplug_namespace }}">
+                </div>
+
+                <div class="form-group">
+                    <label>Group ID</label>
+                    <input name="sparkplug_group_id" value="{{ config.sparkplug_group_id }}">
+                </div>
+
+                <div class="form-group">
+                    <label>Device ID</label>
+                    <input name="sparkplug_device_id" value="{{ config.sparkplug_device_id }}">
+                </div>
+            </div>
+
+            <!-- DRONE SETTINGS -->
+            <div class="card">
+                <h2>Drone</h2>
+
+                <div class="form-group">
+                    <label>Drone UID</label>
+                    <input name="drone_UID" value="{{ config.drone_UID }}">
+                </div>
+
+                <div class="form-group">
+                    <label>Log Level</label>
+                    <input name="log_level" value="{{ config.log_level }}">
+                </div>
+            </div>
+
+            <!-- COMMUNICATION / MAVLINK -->
+            <div class="card">
+                <h2>Communication / MAVLink</h2>
+
+                <div class="form-group">
+                    <label>Communication Type</label>
+                    <select name="comm_type">
+                        <option value="udp" {% if config.comm_type == "udp" %}selected{% endif %}>UDP</option>
+                        <option value="serial" {% if config.comm_type == "serial" %}selected{% endif %}>Serial</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>COM Port / Device</label>
+                    <input name="com_number" value="{{ config.com_number }}">
+                </div>
+
+                <div class="form-group">
+                    <label>Baudrate</label>
+                    <input name="baudrate" value="{{ config.baudrate }}">
+                </div>
+
+                <div class="form-group">
+                    <label>MAVLink Connection String</label>
+                    <input name="mavlink_connection_str" value="{{ config.mavlink_connection_str }}">
+                </div>
+            </div>
+
+        </div>
+
+        <div class="actions">
+            <button type="submit">💾 Save Configuration</button>
+        </div>
+
+    </form>
+</div>
+
+<footer>
+    Drone Edge Platform • Local Configuration UI
+</footer>
+
+</body>
+</html>

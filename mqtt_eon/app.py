@@ -5,6 +5,7 @@ from utils.db_buffer import DBBuffer
 from core.mqtt_publisher import MQTTPublisher
 from rest_api.routes import register_routes
 import os
+from rest_api.config_manager import load_config
 
 from utils.logger import setup_logger
 logging = setup_logger(__name__)
@@ -13,39 +14,54 @@ app = Flask(__name__)
 
 
 # Load config
-CFG_PATH = "config/config.json"
-
-try: 
-     with open(CFG_PATH, "r", encoding="utf-8") as f:
-        config = json.load(f)    
-        MQTT_BROKER = config["mqtt_broker"]
-        MQTT_PORT = config["mqtt_port"]
-        TOPIC = config["topic"]  
-        DRONE_UID = config["drone_UID"]
-
-        SPARKPLUG_NAMESPACE = config["sparkplug_namespace"]
-        SP_GROUP_ID = config["sparkplug_group_id"]
-        SP_EDGE_ID = config["drone_UID"]
-        SP_DEVICE_ID = config["sparkplug_device_id"]       
-        USERNAME = os.getenv("HIVEMQ_USERNAME")
-        PASSWORD = os.getenv("HIVEMQ_PASSWORD")
+# CFG_PATH = "config/config.json"
 
 
-        logging.info(f" [✅] Loaded  config values from file")
+# try: 
+#      with open(CFG_PATH, "r", encoding="utf-8") as f:
+#         # config = json.load(f)   
+#         config = load_config() 
+#         MQTT_BROKER = config["mqtt_broker"]
+#         MQTT_PORT = config["mqtt_port"]
+#         TOPIC = config["topic"]  
+#         DRONE_UID = config["drone_UID"]
+#         print(DRONE_UID ,"DRONE_UID")
+#         SPARKPLUG_NAMESPACE = config["sparkplug_namespace"]
+#         SP_GROUP_ID = config["sparkplug_group_id"]
+#         SP_EDGE_ID = config["drone_UID"]
+#         SP_DEVICE_ID = config["sparkplug_device_id"]       
+#         USERNAME = os.getenv("HIVEMQ_USERNAME")
+#         PASSWORD = os.getenv("HIVEMQ_PASSWORD")
 
-except FileNotFoundError:    
-    logging.error(f"❌ Config file not found '{config/config.json}'. Using default config values.")    
-    MQTT_BROKER = "test.mosquitto.org"
-    MQTT_PORT = 1883
-    TOPIC = "mydrone/sensors"
-    DRONE_UID = "123456789"
-    # Sparkplug-like MQTT structure using JSON payloads
-    SPARKPLUG_NAMESPACE = "spBv1.0"
-    SP_GROUP_ID = "DroneFleet"
-    SP_EDGE_ID = "DHAKSHA-001"        # e.g., DRONE-001
-    SP_DEVICE_ID = ""            # Optional
-    USERNAME = ""
-    PASSWORD = ""
+
+#         logging.info(f" [✅] Loaded  config values from file")
+
+# except FileNotFoundError:    
+#     logging.error(f"❌ Config file not found '{config/config.json}'. Using default config values.")    
+#     MQTT_BROKER = "test.mosquitto.org"
+#     MQTT_PORT = 1883
+#     TOPIC = "mydrone/sensors"
+#     DRONE_UID = "123456789"
+#     # Sparkplug-like MQTT structure using JSON payloads
+#     SPARKPLUG_NAMESPACE = "spBv1.0"
+#     SP_GROUP_ID = "DroneFleet"
+#     SP_EDGE_ID = "DHAKSHA-001"        # e.g., DRONE-001
+#     SP_DEVICE_ID = ""            # Optional
+#     USERNAME = ""
+#     PASSWORD = ""
+
+config = load_config() 
+MQTT_BROKER = config["mqtt_broker"]
+MQTT_PORT = config["mqtt_port"]
+TOPIC = config["topic"]  
+DRONE_UID = config["drone_UID"]
+SPARKPLUG_NAMESPACE = config["sparkplug_namespace"]
+SP_GROUP_ID = config["sparkplug_group_id"]
+SP_EDGE_ID = config["drone_UID"]
+SP_DEVICE_ID = config["sparkplug_device_id"]       
+USERNAME = os.getenv("HIVEMQ_USERNAME")
+PASSWORD = os.getenv("HIVEMQ_PASSWORD")
+logging.info(f" [✅] Loaded  config values from file")
 
 
 buffer = DBBuffer()

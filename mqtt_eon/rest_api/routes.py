@@ -1,7 +1,8 @@
-from flask import Flask, request, jsonify,send_from_directory
+from flask import Flask, request, jsonify,send_from_directory,render_template, redirect, url_for, jsonify
 from utils.logger import setup_logger
 from flask_cors import CORS
 import os
+from rest_api.config_manager import load_config, save_config
 
 logging = setup_logger(__name__)
 
@@ -15,6 +16,40 @@ def register_routes(app,publisher,buffer):
     @app.get("/")
     def root():
         return jsonify({"status": "ok"})
+
+    # --------------------------------
+    # CONFIG DASHBOARD
+    # --------------------------------
+    @app.route("/config", methods=["GET", "POST"])
+    def config_page():
+        if request.method == "POST":
+            updated_config = {
+                "mqtt_broker": request.form.get("mqtt_broker", "").strip(),
+                "mqtt_port": int(request.form.get("mqtt_port", 8883)),
+                "topic": request.form.get("topic", "").strip(),
+
+                "sparkplug_namespace": request.form.get("sparkplug_namespace", "").strip(),
+                "sparkplug_group_id": request.form.get("sparkplug_group_id", "").strip(),
+                "sparkplug_device_id": request.form.get("sparkplug_device_id", "").strip(),
+
+                "drone_UID": request.form.get("drone_UID", "").strip(),
+                "log_level": request.form.get("log_level", "INFO").strip(),
+
+                "comm_type": request.form.get("comm_type", "udp"),
+                "com_number": request.form.get("com_number", "").strip(),
+                "baudrate": int(request.form.get("baudrate", 115200)),
+                "mavlink_connection_str": request.form.get(
+                    "mavlink_connection_str", ""
+                ).strip()
+            }
+
+            save_config(updated_config)
+            return redirect(url_for("config_page"))
+
+        config = load_config()
+        return render_template("config.html", config=config)
+
+
 
     @app.post("/start")
     def start():

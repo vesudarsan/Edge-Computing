@@ -33,8 +33,11 @@ services:
       - "5001:5001" 
 
     volumes:
-     - D:/edgeCompute/config.json:/app/config/config.json:ro
-     - D:/edgeCompute:/app/data
+      - D:/edgeCompute:/edgeCompute
+ 
+    # volumes:
+    #  - D:/edgeCompute/config.json:/app/config/config.json:ro
+    #  - D:/edgeCompute:/app/data
     
     environment:
       - PYTHONUNBUFFERED=1
