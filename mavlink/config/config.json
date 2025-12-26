@@ -10,7 +10,5 @@
   "com_number" :"COM12",
   "baudrate" : 115200,
   "mavlink_connection_str": "udp:0.0.0.0:14550",
-  "log_level": "INFO",
-  "mqtt_username": "your_username",
-  "mqtt_password": "your_password"
+  "log_level": "INFO"
 }

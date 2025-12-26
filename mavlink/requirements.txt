@@ -2,3 +2,4 @@ flask
 flask-cors
 pymavlink
 requests
+pyserial
