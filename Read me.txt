@@ -207,7 +207,7 @@ topic: spBv1.0/DumsDroneFleet/NCMD/123456789/start
     "name": "mavlink-service"
 }
 
-topic: spBv1.0/DumsDroneFleet/NCMD/123456789/
+topic: spBv1.0/DumsDroneFleet/DCMD/123456789/MAVLINK
 
 {
     "CMD": "BIN_FILE"

@@ -15,7 +15,7 @@ OTA_URL_ENDPOINT = "http://ota-update-service:5000/"
 
 
 MAVLINK_URL_LOCALHOST = "http://localhost:5002/drone/readSendBinFile"
-MAVLINK_URL_ENDPOINT = "http://mavlink-service:5002/drone/readSendBinFile/"
+MAVLINK_URL_ENDPOINT = "http://mavlink-service:5002/drone/readSendBinFile"
 
 
 if platform.system() == "Windows": # 2dl read from config
@@ -243,7 +243,7 @@ class MQTTClient:
                 #     url = MAVLINK_URL_ENDPOINT  # 2dl read from config
 
                 # self.rest_client.post(mavlink_url, data)
-                self.rest_client.get(mavlink_url, data)
+                self.rest_client.get(mavlink_url)
 
         except json.JSONDecodeError as e:
             logging.error(f"Invalid JSON in payload: {e}")
