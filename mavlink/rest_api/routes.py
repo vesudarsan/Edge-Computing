@@ -58,7 +58,8 @@ def register_routes(app,service):
                 "last_seen_sec_ago": None
             })
 
-    @app.route('/drone/readSendBinFile', methods=['POST'])
+    # @app.route('/drone/readSendBinFile', methods=['POST'])
+    @app.route('/drone/readSendBinFile', methods=['GET'])
     def read_send_bin_file():
         print("@@@@@@@@@@@@@@@@@@2")#2dl
         return service.readSendBinFile()

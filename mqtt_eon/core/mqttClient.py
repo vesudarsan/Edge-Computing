@@ -242,7 +242,8 @@ class MQTTClient:
                 # else:
                 #     url = MAVLINK_URL_ENDPOINT  # 2dl read from config
 
-                self.rest_client.post(mavlink_url, data)
+                # self.rest_client.post(mavlink_url, data)
+                self.rest_client.get(mavlink_url, data)
 
         except json.JSONDecodeError as e:
             logging.error(f"Invalid JSON in payload: {e}")
@@ -259,6 +260,10 @@ class MQTTClient:
             return None
         
         logging.info(f"✅ Published to {actual_topic} [qos={qos}]")
+
+  
+        if actual_topic.endswith("/binFile"):
+            return self.client.publish(actual_topic, payload, qos=qos)
 
         python_dict = ast.literal_eval(payload)
         payload_json_string = json.dumps(python_dict)   

@@ -87,6 +87,14 @@ class Mavlink:
         self.udp = MAVLINK_CONN_STR
         self.deviceId = "Mavlink"
         self.topic = f"{SPARKPLUG_NAMESPACE}/{SP_GROUP_ID}/DDATA/{SP_EDGE_ID}/{self.deviceId}"
+        # --- Flight time tracking ---
+        self.armed = False
+        self.flight_start_ts = None      # epoch seconds when arming starts
+        self.total_flight_seconds = 0.0  # cumulative in this process lifetime
+        self.last_flight_metric_ts = 0.0
+        self.flight_metric_topic = f"{SPARKPLUG_NAMESPACE}/{SP_GROUP_ID}/DDATA/{SP_EDGE_ID}/FlightMetrics"
+        self.bin_file_topic = f"{SPARKPLUG_NAMESPACE}/{SP_GROUP_ID}/DDATA/{SP_EDGE_ID}/binFile"
+
 
         
  
@@ -103,6 +111,33 @@ class Mavlink:
                 logging.warning(f"⏳ Attempt {attempt} failed: {e}")
                 time.sleep(1)
         raise TimeoutError("❌ Heartbeat not received after retries.")
+    
+    def _on_armed(self):
+        self.armed = True
+        self.flight_start_ts = time.time()
+        logging.info(f"🟢 ARMED at {datetime.utcnow().isoformat()}Z")
+
+    def _on_disarmed(self):
+        # close the current armed window
+        if self.armed and self.flight_start_ts:
+            delta = time.time() - self.flight_start_ts
+            self.total_flight_seconds += max(0.0, delta)
+            logging.info(f"🔴 DISARMED at {datetime.utcnow().isoformat()}Z | "
+                        f"+{delta:.1f}s this flight | "
+                        f"Total: {self.total_flight_seconds:.1f}s")
+        self.armed = False
+        self.flight_start_ts = None
+
+    def get_flight_time_seconds(self) -> float:
+        """Total accumulated seconds, including an in-progress armed window."""
+        total = self.total_flight_seconds
+        if self.armed and self.flight_start_ts:
+            total += max(0.0, time.time() - self.flight_start_ts)
+        return total
+
+    def get_flight_time_hours(self) -> float:
+        return self.get_flight_time_seconds() / 3600.0
+
     
     def connect_mavlink(self):
         try:
@@ -171,6 +206,9 @@ class Mavlink:
             return False        
         
     def stop(self):
+        # finalize an open armed session
+        if self.armed:
+            self._on_disarmed()
         if not self.running:
             logging.info("Not running.")
             return False
@@ -185,18 +223,56 @@ class Mavlink:
     def run_loop(self):     
         logging.info("Started run_loop() thread for Mav Link services.") # 
         while self.running:
-            logging.info(f"Polling MAVLink...... v1.0.0")
+            logging.info(f"Polling MAVLink...... v1.0.0") 
            
             try:
                 msg = self.connection.recv_match(blocking=True, timeout=5)
+                # print("MAVLINK MSG:",msg)
              
                 if msg:
                     data = self.decode_msgs(msg)
                     if data:
+                        # --- Detect ARM/DISARM from HEARTBEAT ---
+                        if data.get("messageType") == "HEARTBEAT":
+                            print("HEARTBEAT message received")
+                            base_mode = data.get("base_mode")
+                            if base_mode is not None:
+                                currently_armed = (base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED) != 0
+                                if currently_armed and not self.armed:
+                                    self._on_armed()
+                                elif (not currently_armed) and self.armed:
+                                    self._on_disarmed()
+
+
 
                         payload = {"topic": self.topic,"message": str(data)}
 
                         self.mqtt_eon_rest_call.publish(payload)
+
+
+                        # Throttle a separate metric publish (~5s)
+                        
+                        now = time.time()
+                        # print("now:",now)
+                        # print("last_flight_metric_ts:",self.last_flight_metric_ts)
+                    
+                        # print("now - self.last_flight_metric_ts", now - self.last_flight_metric_ts)
+                        if now - self.last_flight_metric_ts >= 5.0:
+                            self.last_flight_metric_ts = now
+                          
+                            metric = {
+                                "timestamp": datetime.now(timezone.utc).isoformat(),
+                                "armed": self.armed,
+                                "flight_time_seconds": round(self.get_flight_time_seconds(), 1),
+                                "flight_time_hours": round(self.get_flight_time_hours(), 3),
+                            }
+                            # self.mqtt_eon_rest_call.publish({
+                            #     "topic": self.flight_metric_topic,
+                            #     "message": json.dumps(metric)
+                            # })
+                            # print("topic:",self.flight_metric_topic)
+                            # print("Published flight metrics:", metric)
+
      
                         # try:
                         #     if requests.get 
@@ -220,7 +296,7 @@ class Mavlink:
                     logging.debug("No message this cycle.")
             except Exception as e:
                 logging.error(f"Error in run_loop: {e}")
-            time.sleep(0.1)    
+            time.sleep(3.0)  # Polling interval    
 
     def is_disarmed(self):
         self.connection.mav.request_data_stream_send(self.connection.target_system, self.connection.target_component,
@@ -234,11 +310,21 @@ class Mavlink:
 
 
     def get_latest_log_filename(self):
-        self.connection.mav.command_long_send(self.connection.target_system, self.connection.target_component,
-                                  mavutil.mavlink.MAV_CMD_LOG_REQUEST_LIST, 0,
-                                  0, 0xFFFFFFFF, 0, 0, 0, 0, 0)
+        # self.connection.mav.command_long_send(self.connection.target_system,
+        #                                        self.connection.target_component,
+        #                                        mavutil.mavlink.MAV_CMD_LOG_REQUEST_LIST, 0,
+        #                                        0, 0xFFFFFFFF, 0, 0, 0, 0, 0)
+        self.connection.mav.command_long_send(
+                                                self.connection.target_system,
+                                                self.connection.target_component,
+                                                117,  # MAV_CMD_LOG_REQUEST_LIST
+                                                0,
+                                                0, 0xFFFFFFFF, 0, 0, 0, 0, 0
+                                            )
+
         logs = []
-        while True:
+        while True:    
+
             msg = self.connection.recv_match(type='LOG_ENTRY', blocking=True, timeout=3)
             if not msg:
                 break
@@ -281,23 +367,46 @@ class Mavlink:
             "bin_file_base64": encoded_data
         }
 
-        return json.dumps(payload)
-    
+
+            # Publish to MQTT
+        try:
+            self.mqtt_eon_rest_call.publish(
+                {"topic": self.bin_file_topic, "message": json.dumps(payload)}
+            )
+            logging.info(f"Published MQTT payload for {file_path}")
+        except Exception as e:
+            logging.error(f"MQTT publish failed: {e}")
+            return {"status": "error", "message": str(e)}
+
+        # Return REST response
+        return {"status": "success", "file": file_path, "flight_id": payload["flight_id"]}
+
+           
  
 
     def readSendBinFile(self):     
         if self.is_disarmed(): 
-            logging.info(f"Disarm detected")
-            log_id = self.get_latest_log_filename(self.connection)
+            logging.info(f"Disarm detected")            
+            log_id = self.get_latest_log_filename()
             if log_id is not None:
                 file_path = f"log_{log_id}.bin"
                 self.download_log(self.connection, log_id, file_path)
-                return self.send_file_to_mqtt(file_path)
+                return self.send_file_to_mqtt(file_path) # must return a Flask-valid response
             else:
                 logging.info(f"No logs found")
+                # Publish MQTT notification too
+                payload = {"topic": self.bin_file_topic, "message": "No logs found"}
+                self.mqtt_eon_rest_call.publish(payload)
+
+                return {"status": "no_logs"}, 404   # <-- return a valid response
         else:
             logging.info(f"Still armed, waiting...")
+            payload = {"topic": self.bin_file_topic, "message": "Still armed, waiting..."}
+            self.mqtt_eon_rest_call.publish(payload)
+
+            return {"status": "armed"}, 200  # <-- return a valid response
           
+
 
 # ------------------------
 # Graceful Shutdown on Ctrl+C
